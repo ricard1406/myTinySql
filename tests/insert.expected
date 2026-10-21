@@ -1,0 +1,22 @@
+> INSERT INTO EMPLOY VALUES (Mario,'Rossi, Jr',Via Garibaldi 3,Bologna)
+1 row inserted into EMPLOY with ID 69
+
+> INSERT INTO CAL_WEEKLY VALUES (21,1,14000,170,300)
+1 row inserted into CAL_WEEKLY with ID 154
+
+> INSERT INTO EMPLOY VALUES (99,Anna,Verdi,Corso,Roma)
+1 row inserted into EMPLOY with ID 99
+
+> SELECT ID,NOME,COGNOME,VIA,CITTA FROM EMPLOY WHERE ID >= 68
+ID-------- NOME------------------------------------ COGNOME--------------------------------- VIA----------------------------------------------------------------------------- CITTA---------------------------------------------------------------------------
+68         Pietro                                   Mascagni                                 Moderno                                                                          Livorno
+69         Mario                                    Rossi, Jr                                Via Garibaldi 3                                                                  Bologna
+99         Anna                                     Verdi                                    Corso                                                                            Roma
+(3 rows)
+
+> SELECT * FROM CAL_WEEKLY WHERE ID > 152
+ID-------- YEAR- WEEK- CALORIES FAT-- PROTEIN
+153        20    153   14786    260   480
+154        21    1     14000    170   300
+(2 rows)
+

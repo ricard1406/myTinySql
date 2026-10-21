@@ -1,0 +1,51 @@
+> DELETE FROM EMPLOY WHERE ID = 3
+1 row deleted from EMPLOY
+
+> SELECT ID,NOME FROM EMPLOY WHERE ID <= 4
+ID-------- NOME------------------------------------
+1          GIUSEPPE
+2          LUIGI
+4          Ferdinando
+(3 rows)
+
+> DELETE FROM EMPLOY WHERE CITTA = Nowhere
+0 rows deleted from EMPLOY
+
+> DELETE FROM EMPLOY WHERE ID >= 36
+33 rows deleted from EMPLOY
+
+> SELECT ID FROM EMPLOY WHERE ID > 33
+ID--------
+34
+35
+(2 rows)
+
+> INSERT INTO EMPLOY VALUES (Anna,Verdi,Corso,Roma)
+1 row inserted into EMPLOY with ID 36
+
+> SELECT ID,NOME,COGNOME FROM EMPLOY WHERE ID > 34
+ID-------- NOME------------------------------------ COGNOME---------------------------------
+35         Pietro                                   Mascagni
+36         Anna                                     Verdi
+(2 rows)
+
+> DELETE FROM EMPLOY
+ERROR: expected WHERE (DELETE always needs a condition, e.g. WHERE ID = 3) but found end of statement
+
+> DELETE FROM SYSTEM_TABLE WHERE ID = 1
+ERROR: SYSTEM_TABLE cannot be changed with DELETE: edit the file instead
+
+> DELETE FROM EMPLOY WHERE FOO = 1
+ERROR: unknown column 'FOO' in table EMPLOY
+
+> DELETE FROM CAL_WEEKLY WHERE CALORIES < 11400
+2 rows deleted from CAL_WEEKLY
+
+> SELECT ID,CALORIES FROM CAL_WEEKLY WHERE CALORIES < 11600
+ID-------- CALORIES
+103        11589
+123        11547
+127        11559
+144        11559
+(4 rows)
+

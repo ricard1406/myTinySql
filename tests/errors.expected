@@ -1,0 +1,40 @@
+> SELECT FOO FROM EMPLOY
+ERROR: unknown column 'FOO' in table EMPLOY
+
+> SELECT * FROM NOPE
+ERROR: unknown table 'NOPE'
+
+> SELECT NOME FROM EMPLOY WHERE
+ERROR: expected a column name but found end of statement
+
+> INSERT INTO EMPLOY VALUES (Mario)
+ERROR: table EMPLOY has 5 columns (give 4 and ID is assigned): got 1 values
+
+> INSERT INTO EMPLOY VALUES (Mario,Rossi,Via,ThisCityNameIsDefinitelyFarTooLongToFitInsideTheEightyCharacterColumnOfTheTableForSure)
+ERROR: value 'ThisCityNameIsDefinitelyFarTooLongToFitInsideTheEightyCharacterColumnOfTheTableForSure' is too long for column CITTA (max 80 characters)
+
+> COLUMN NOME FORMAT X12
+ERROR: invalid format "X12", expected A<width> such as A16
+
+> SELECT 'unterminated FROM EMPLOY
+ERROR: unterminated quoted string
+
+> INSERT INTO EMPLOY VALUES (1,Anna,Verdi,Corso,Roma)
+ERROR: table EMPLOY already has a row with ID 1
+
+> SELECT FIELD FROM SYSTEM_TABLE WHERE TABLE = EMPLOY AND
+ERROR: expected end of statement but found "AND"
+
+> UPDATE EMPLOY SET NOME = X
+ERROR: expected WHERE (UPDATE always needs a condition, e.g. WHERE ID = 3) but found end of statement
+
+> SELECT ID FROM EMPLOY WHERE ID = 1
+ID--------
+1
+(1 row)
+
+> SELECT ID FROM EMPLOY WHERE ID = 2
+ID--------
+2
+(1 row)
+

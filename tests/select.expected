@@ -1,0 +1,96 @@
+> SELECT ID,NOME,COGNOME,CITTA FROM EMPLOY WHERE CITTA = Torino
+ID-------- NOME-------- COGNOME--------- CITTA---------------------------------------------------------------------------
+5          Alfredo      Casella          Torino
+21         Felice       Giardini         Torino
+37         Alfredo      Casella          Torino
+53         Felice       Giardini         Torino
+(4 rows)
+
+> SELECT NOME,'lives in',CITTA FROM EMPLOY WHERE ID <= 3
+NOME-------- lives in CITTA---------------------------------------------------------------------------
+GIUSEPPE     lives in MILANO
+LUIGI        lives in TORINO
+PIETRO       lives in VERONA
+(3 rows)
+
+> SELECT * FROM CAL_WEEKLY WHERE CALORIES > 15000
+ID-------- YEAR- WEEK- CALORIES FAT-- PROTEIN
+27         20    27    15202    208   334
+28         20    28    15619    165   312
+29         20    29    15519    174   303
+(3 rows)
+
+> SELECT NOME FROM EMPLOY WHERE ID = 3
+NOME--------
+PIETRO
+(1 row)
+
+> select nome , citta from employ where id < 4
+NOME-------- CITTA---------------------------------------------------------------------------
+GIUSEPPE     MILANO
+LUIGI        TORINO
+PIETRO       VERONA
+(3 rows)
+
+> SELECT NOME FROM EMPLOY WHERE NOME = luigi
+NOME--------
+(0 rows)
+
+> SELECT ID,CALORIES FROM CAL_WEEKLY WHERE CALORIES < 11400
+ID-------- CALORIES
+87         11378
+129        11234
+(2 rows)
+
+> SELECT FIELD FROM SYSTEM_TABLE WHERE TABLE <> SYSTEM_TABLE ANDROID-LIST 1 1
+FIELD---------------
+ID
+NOME
+COGNOME
+VIA
+CITTA
+ID
+NAME
+TYPE
+ADDRESS
+TOWN
+ID
+YEAR
+WEEK
+CALORIES
+FAT
+PROTEIN
+(16 rows)
+
+> SELECT COGNOME FROM EMPLOY WHERE ID > 60 ANDROID-DISTINCT
+COGNOME---------
+Manfredini
+Mannino
+Manzoni
+Marenzio
+Martucci
+Mascitti
+Mascagni
+(7 rows)
+
+> SELECT * FROM EMPLOY WHERE ID < 3 ANDROID-LIST 2 3
+NOME-------- COGNOME---------
+GIUSEPPE     VERDI
+LUIGI        ROSSI
+(2 rows)
+
+> SELECT TABLE,FIELD FROM SYSTEM_TABLE WHERE TABLE = CAL_WEEKLY
+TABLE--------------- FIELD---------------
+CAL_WEEKLY           ID
+CAL_WEEKLY           YEAR
+CAL_WEEKLY           WEEK
+CAL_WEEKLY           CALORIES
+CAL_WEEKLY           FAT
+CAL_WEEKLY           PROTEIN
+(6 rows)
+
+> SELECT ID,NAME,TOWN FROM COMPANY WHERE TYPE = Software
+ID-------- NAME------------------------------------ TOWN----------------------------------------------------------------------------
+2          Bianchi Software                         Milano
+(1 row)
+

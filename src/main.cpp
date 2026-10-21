@@ -1,0 +1,184 @@
+// myTinySQL - a tiny SQL interpreter over fixed-width text files.
+//
+//   ./myTinySql --sqlfile=examples/select.sql   run a script
+//   ./myTinySql                                 type statements (or pipe them in)
+//   ./myTinySql --http                          browser UI on http://localhost:8080
+//   ./myTinySql --android                       server for the Android app on port 8180
+
+#include <unistd.h>
+
+#include <charconv>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iostream>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include "Output.hpp"
+#include "Server.hpp"
+#include "Session.hpp"
+
+namespace {
+
+using namespace tinysql;
+
+constexpr std::string_view kUsage = R"(Usage: myTinySql [options]
+
+  --sqlfile=FILE   run the statements in FILE ('-' for standard input)
+  --http           start the browser server (default port 8080)
+  --android        start the Android app server (default port 8180)
+  --port=N         listen on port N instead of the default
+  --allow=LIST     comma-separated client IP prefixes the server accepts
+                   (Android default: 151.,93.,127.  HTTP default: everyone)
+  --data=DIR       directory with SYSTEM_TABLE and the *_DATA files (default: data)
+  --help           show this help
+
+With no --sqlfile and no server option, statements are read from standard input.
+)";
+
+struct Options {
+    std::optional<std::string> sqlFile;
+    std::optional<ServerMode> server;
+    std::optional<std::uint16_t> port;
+    std::optional<std::vector<std::string>> allow;
+    std::filesystem::path dataDir = "data";
+};
+
+std::vector<std::string> splitList(std::string_view text)
+{
+    std::vector<std::string> items;
+    while (!text.empty()) {
+        const std::size_t comma = text.find(',');
+        if (std::string_view item = text.substr(0, comma); !item.empty()) {
+            items.emplace_back(item);
+        }
+        text = comma == std::string_view::npos ? std::string_view{} : text.substr(comma + 1);
+    }
+    return items;
+}
+
+/// Parses the command line; throws std::invalid_argument with a message on bad input.
+Options parseOptions(int argc, char** argv)
+{
+    Options options;
+    for (int i = 1; i < argc; ++i) {
+        std::string_view arg = argv[i];
+        std::string_view name = arg;
+        std::optional<std::string_view> value;
+        if (const std::size_t eq = arg.find('='); eq != std::string_view::npos) {
+            name = arg.substr(0, eq);
+            value = arg.substr(eq + 1);
+        }
+        auto requireValue = [&]() -> std::string_view {
+            if (value) {
+                return *value;
+            }
+            if (i + 1 >= argc) {
+                throw std::invalid_argument(std::format("{} needs a value", name));
+            }
+            return argv[++i];
+        };
+
+        if (name == "--help" || name == "-h") {
+            std::cout << kUsage;
+            std::exit(0);
+        } else if (name == "--sqlfile") {
+            options.sqlFile = std::string(requireValue());
+        } else if (name == "--http") {
+            options.server = ServerMode::Http;
+        } else if (name == "--android") {
+            options.server = ServerMode::Android;
+        } else if (name == "--port") {
+            const std::string_view text = requireValue();
+            std::uint16_t port = 0;
+            auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), port);
+            if (ec != std::errc{} || ptr != text.data() + text.size() || port == 0) {
+                throw std::invalid_argument(std::format("invalid port '{}'", text));
+            }
+            options.port = port;
+        } else if (name == "--allow") {
+            options.allow = splitList(requireValue());
+        } else if (name == "--data") {
+            options.dataDir = std::string(requireValue());
+        } else {
+            throw std::invalid_argument(std::format("unknown option '{}'", arg));
+        }
+    }
+    if (options.sqlFile && options.server) {
+        throw std::invalid_argument("choose either --sqlfile or a server mode, not both");
+    }
+    return options;
+}
+
+int runScript(Session& session, std::istream& in)
+{
+    std::stringstream script;
+    script << in.rdbuf();
+    int exitCode = 0;
+    for (const StatementResult& result : session.executeScript(script.str())) {
+        std::cout << renderText(result);
+        if (result.failed) {
+            exitCode = 1;
+        }
+    }
+    return exitCode;
+}
+
+int runInteractive(Session& session)
+{
+    std::string line;
+    while (std::cout << "tinysql> " << std::flush, std::getline(std::cin, line)) {
+        for (const StatementResult& result : session.executeScript(line)) {
+            std::cout << renderText(result);
+        }
+    }
+    std::cout << '\n';
+    return 0;
+}
+
+}  // namespace
+
+int main(int argc, char** argv)
+{
+    try {
+        const Options options = parseOptions(argc, argv);
+        if (!std::filesystem::is_directory(options.dataDir)) {
+            std::cerr << std::format("data directory '{}' not found (use --data=DIR)\n", options.dataDir.string());
+            return 2;
+        }
+
+        if (options.server) {
+            const bool android = *options.server == ServerMode::Android;
+            ServerConfig config{
+                .mode = *options.server,
+                .port = options.port.value_or(android ? 8180 : 8080),
+                .dataDir = options.dataDir,
+                .allowedClients = options.allow.value_or(
+                    android ? std::vector<std::string>{"151.", "93.", "127."} : std::vector<std::string>{}),
+            };
+            runServer(config);
+            return 0;
+        }
+
+        Session session(options.dataDir);
+        if (!options.sqlFile || *options.sqlFile == "-") {
+            return ::isatty(STDIN_FILENO) && !options.sqlFile ? runInteractive(session) : runScript(session, std::cin);
+        }
+        std::ifstream file(*options.sqlFile);
+        if (!file) {
+            std::cerr << std::format("cannot open '{}'\n", *options.sqlFile);
+            return 2;
+        }
+        return runScript(session, file);
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "myTinySql: " << e.what() << "\n\n" << kUsage;
+        return 2;
+    } catch (const std::exception& e) {
+        std::cerr << "myTinySql: " << e.what() << '\n';
+        return 1;
+    }
+}

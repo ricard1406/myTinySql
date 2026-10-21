@@ -1,0 +1,61 @@
+> UPDATE EMPLOY SET CITTA = Bologna WHERE ID = 2
+1 row updated in EMPLOY
+
+> UPDATE EMPLOY SET NOME = 'Luigi Maria', VIA = 'Via Roma 1' WHERE ID = 2
+1 row updated in EMPLOY
+
+> SELECT * FROM EMPLOY WHERE ID <= 3
+ID-------- NOME------------------------------------ COGNOME--------------------------------- VIA----------------------------------------------------------------------------- CITTA---------------------------------------------------------------------------
+1          GIUSEPPE                                 VERDI                                    LARGA                                                                            MILANO
+2          Luigi Maria                              ROSSI                                    Via Roma 1                                                                       Bologna
+3          PIETRO                                   BIANCHI                                  ABBA                                                                             VERONA
+(3 rows)
+
+> UPDATE COMPANY SET TOWN = Torino WHERE TYPE = Software
+1 row updated in COMPANY
+
+> SELECT ID,NAME,TOWN FROM COMPANY WHERE TOWN = Torino
+ID-------- NAME------------------------------------ TOWN----------------------------------------------------------------------------
+1          Rossi Costruzioni                        Torino
+2          Bianchi Software                         Torino
+(2 rows)
+
+> UPDATE CAL_WEEKLY SET FAT = 0 WHERE CALORIES > 15500
+2 rows updated in CAL_WEEKLY
+
+> SELECT ID,CALORIES,FAT FROM CAL_WEEKLY WHERE CALORIES > 15000
+ID-------- CALORIES FAT--
+27         15202    208
+28         15619    0
+29         15519    0
+(3 rows)
+
+> UPDATE EMPLOY SET CITTA = Nowhere WHERE ID = 999
+0 rows updated in EMPLOY
+
+> UPDATE EMPLOY SET CITTA = Roma
+ERROR: expected WHERE (UPDATE always needs a condition, e.g. WHERE ID = 3) but found end of statement
+
+> UPDATE EMPLOY SET CITTA = Via Roma WHERE ID = 1
+ERROR: put a value with spaces in quotes, e.g. CITTA = 'Via Roma'
+
+> UPDATE EMPLOY SET ID = 5 WHERE ID = 1
+ERROR: the ID column cannot be changed: rows are found by their ID
+
+> UPDATE EMPLOY SET FOO = 1 WHERE ID = 1
+ERROR: unknown column 'FOO' in table EMPLOY
+
+> UPDATE EMPLOY SET CITTA = Roma WHERE FOO = 1
+ERROR: unknown column 'FOO' in table EMPLOY
+
+> UPDATE SYSTEM_TABLE SET TYPE = S1 WHERE ID = 1
+ERROR: SYSTEM_TABLE cannot be changed with UPDATE: edit the file instead
+
+> UPDATE EMPLOY SET CITTA = 'ThisCityNameIsDefinitelyFarTooLongToFitInsideTheEightyCharacterColumnOfTheTableForSure' WHERE ID = 1
+ERROR: value 'ThisCityNameIsDefinitelyFarTooLongToFitInsideTheEightyCharacterColumnOfTheTableForSure' is too long for column CITTA (max 80 characters)
+
+> SELECT ID,CITTA FROM EMPLOY WHERE ID = 1
+ID-------- CITTA---------------------------------------------------------------------------
+1          MILANO
+(1 row)
+

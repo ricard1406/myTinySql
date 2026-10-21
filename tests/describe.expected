@@ -1,0 +1,17 @@
+> DESCRIBE
+TABLE------- COLUMNS ROW_LENGTH
+SYSTEM_TABLE 9       80
+EMPLOY       5       250
+COMPANY      5       250
+CAL_WEEKLY   6       35
+(4 tables)
+
+> DESCRIBE EMPLOY
+COLUMN- TYPE FROM TO- WIDTH
+ID      N1   0    9   10
+NOME    S1   10   49  40
+COGNOME S1   50   89  40
+VIA     S1   90   169 80
+CITTA   S1   170  249 80
+(5 columns)
+

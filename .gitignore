@@ -1,0 +1,14 @@
+# Build output: recreated by `make`
+/build/
+/myTinySql
+
+# Left behind if UPDATE or DELETE is interrupted half-way
+*.tmp
+
+# Compiled files of the 2023 version: the sources next to them are kept
+/legacy/*.o
+/legacy/myTinySql
+/legacy/filter
+/legacy/test
+/legacy/test1
+/legacy/test3
