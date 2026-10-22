@@ -29,7 +29,8 @@ REM a comment
 
 | Path | What |
 | --- | --- |
-| `src/` | The interpreter: parser, session, table files, output, servers |
+| `src/` | The interpreter's sources (`.cpp`): parser, session, table files, output, server |
+| `include/` | Its headers (`.hpp`): the types and declarations each source file shares |
 | `data/` | The database: `SYSTEM_TABLE` (column positions of every table) and one `<TABLE>_DATA` file per table |
 | `examples/` | Sample scripts (`insert.sql` adds rows to `data/`) |
 | `tests/` | Golden-output tests, run on a frozen copy of the tables in `tests/data/` |

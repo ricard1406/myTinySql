@@ -22,11 +22,13 @@ What it supports:
 
 This guide describes the rewritten version. It was checked on 2026-10-20 by building with g++ 15.2 (no warnings) and running `make test` (6 test scripts, all passing).
 
+**On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (a private repository for now). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), published on 2026-10-22.
+
 ## Project structure
 
-The code is in `src/` (2,094 lines in 15 files), the database in `data/`, scripts in `examples/` and `tests/`, notes in `docs/`, and the whole 2023 version in `legacy/`.
+The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 lines in all; the database in `data/`, scripts in `examples/` and `tests/`, notes in `docs/`, and the whole 2023 version in `legacy/`.
 
-**Source code (`src/`)**
+**Source code (`.cpp` in `src/`, `.hpp` in `include/`)**
 
 | File | Lines | Role |
 | --- | --- | --- |
@@ -146,6 +148,12 @@ Problems are thrown as `SqlError`. `Session::execute()` catches them and returns
 
 The build needs `make` and g++ 13 or newer, because the code uses C++20 and `std::format`. Both are installed on this machine: g++ 15.2 and GNU Make 4.4.1.
 
+To get the code on another computer (while the repository is private, you must be logged in to GitHub as its owner):
+
+```bash
+git clone https://github.com/ricard1406/myTinySql.git
+```
+
 ```bash
 cd ~/Projects/myTinySQL
 make          # builds ./myTinySql; object files go to build/
@@ -153,7 +161,7 @@ make test     # runs the 6 test scripts on a copy of tests/data/
 make clean    # removes build/ and the binary
 ```
 
-The Makefile compiles every `src/*.cpp` with `-std=c++20 -Wall -Wextra -Wpedantic -O2`, and the build has no warnings. It tracks header dependencies (`-MMD`), so editing a `.hpp` file rebuilds every file that includes it.
+The Makefile compiles every `src/*.cpp` with `-std=c++20 -Wall -Wextra -Wpedantic -O2 -pthread`, looking for headers in `include/` (`-Iinclude`). The build has no warnings. It tracks header dependencies (`-MMD`), so editing a `.hpp` file rebuilds every file that includes it.
 
 **Tests:** each `tests/NAME.sql` runs on a fresh copy of `tests/data/`, a frozen set of the tables (so your own changes to `data/` don't affect the tests), and its output must match `tests/NAME.expected` exactly. If you change the output on purpose, run `tests/run_tests.sh --update` and check the diff of the `.expected` files.
 

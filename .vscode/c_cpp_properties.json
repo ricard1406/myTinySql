@@ -7,7 +7,7 @@
             "cppStandard": "c++20",
             "intelliSenseMode": "linux-gcc-x64",
             "includePath": [
-                "${workspaceFolder}/src"
+                "${workspaceFolder}/include"
             ],
             "compilerArgs": [
                 "-std=c++20"

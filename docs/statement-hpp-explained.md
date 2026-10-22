@@ -1,4 +1,4 @@
-# `src/Statement.hpp` explained, with a comparison to C
+# `include/Statement.hpp` explained, with a comparison to C
 
 `Statement.hpp` holds **pure data**: it describes what a parsed statement looks like. It contains no logic except two function declarations. Everything else in the project (parser, session, output) is built around these types, which is why it's the best file to study first.
 
