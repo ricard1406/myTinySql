@@ -1,10 +1,10 @@
 # From the 2023 code to the new code
 
-A summary to help you study the new code: headers in `include/`, sources in `src/`. The 2023 files are in `legacy/`.
+A summary to help you study the new code: headers in `include/`, sources in `src/`. The 2023 files are no longer in the repository (they were removed on 2026-10-22); the old names below are for reference.
 
 ## Where each old piece went
 
-| 2023 (`legacy/`) | New (`src/` and `include/`) | What changed |
+| 2023 version | New (`src/` and `include/`) | What changed |
 | --- | --- | --- |
 | `myTinySqlMain.cpp`: `main()` plus two copy-pasted socket servers (browser and Android) | `main.cpp` and `Server.cpp` | One browser server. The Android server was never used by any app and was removed on 2026-10-22. |
 | `myTinySql.cpp`: `SqlStatemen()`, a chain of `if` checks on the first word | `Parser.cpp` and `Session.cpp` | The text is parsed first, then run |

@@ -6,7 +6,7 @@ Copy of the online project guide, as of 2026-10-21, plus the DELETE and UPDATE s
 
 myTinySQL is a small SQL interpreter that stores tables as plain-text files with fixed-width columns. It runs SQL scripts, takes statements typed at a prompt, and answers queries from a browser page. It began in August 2023 as a learning project and was rewritten in modern C++ on 2026-10-20.
 
-The 2023 version, now kept in `legacy/`, was **C++** (g++, `std::string`, `std::vector`, `std::thread`), written in a mostly C style: global buffers allocated with `calloc`, manual offset arithmetic and `char[]` copies.
+The 2023 version was **C++** (g++, `std::string`, `std::vector`, `std::thread`), written in a mostly C style: global buffers allocated with `calloc`, manual offset arithmetic and `char[]` copies.
 
 The current version is **C++20**. It has small classes with one job each, `std::vector`, `std::optional` and `std::variant` instead of `calloc` buffers, exceptions instead of `exit()`, and no global variables.
 
@@ -26,7 +26,7 @@ This guide describes the rewritten version. It was checked on 2026-10-20 by buil
 
 ## Project structure
 
-The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 lines in all; the database in `data/`, scripts in `examples/` and `tests/`, notes in `docs/`, and the whole 2023 version in `legacy/`.
+The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 lines in all; the database in `data/`, scripts in `examples/` and `tests/`, and notes in `docs/`.
 
 **Source code (`.cpp` in `src/`, `.hpp` in `include/`)**
 
@@ -49,10 +49,9 @@ The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 
 | `examples/` | `select.sql`, `describe.sql`, `insert.sql`, `company.sql`. `insert.sql` adds rows to `data/`; `company.sql` holds the rows that filled `COMPANY_DATA`. |
 | `tests/` | 6 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
-| `legacy/` | Every file of the 2023 version, unchanged: sources, old Makefile, `.o` files, old scripts, scratch tests and the stray `index.html` |
 | `Makefile`, `README.md` | Build rules and a quick start |
 
-One data change: the ruler line `0123456789...` at the top of `CAL_WEEKLY_DATA` was removed, because it was printed as a row. The original file is in `legacy/`. `SYSTEM_DATA` is no longer needed, since `DESCRIBE` now reads `SYSTEM_TABLE`.
+One data change from 2023: the ruler line `0123456789...` at the top of `CAL_WEEKLY_DATA` was removed, because it was printed as a row. `SYSTEM_DATA` is no longer needed, since `DESCRIBE` now reads `SYSTEM_TABLE`.
 
 ## How it works
 
@@ -256,7 +255,7 @@ curl 'http://localhost:8080/?subject=SELECT+ID%2CNOME%2CCITTA+FROM+EMPLOY+WHERE+
 
 ## Changes from 2023 and what is left
 
-The rewrite fixes every bug found in the 2023 version. The table and catalogue file formats stay the same. The Android server of 2023 was never used by any app, so it was removed on 2026-10-22 (its code is still in `legacy/`).
+The rewrite fixes every bug found in the 2023 version. The table and catalogue file formats stay the same. The Android server of 2023 was never used by any app, so it was removed on 2026-10-22.
 
 | 2023 problem | Now |
 | --- | --- |

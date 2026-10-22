@@ -6,7 +6,7 @@ Answer: **keep `std::`**, even in a small project.
 
 ## 1. Never in a header: this one is a firm rule
 
-`using namespace std;` in a `.hpp` file is copied into every file that includes it. The 2023 `myToolBox.h` (now in `legacy/`) did exactly this, so every file in the old project got all of `std` whether it wanted it or not.
+`using namespace std;` in a `.hpp` file is copied into every file that includes it. The 2023 `myToolBox.h` did exactly this, so every file in the old project got all of `std` whether it wanted it or not.
 
 ## 2. In a `.cpp` file it's allowed, but it can bite
 

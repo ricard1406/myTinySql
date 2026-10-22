@@ -36,7 +36,6 @@ REM a comment
 | `examples/` | Sample scripts (`insert.sql` adds rows to `data/`) |
 | `tests/` | Golden-output tests, run on a frozen copy of the tables in `tests/data/` |
 | `docs/` | Study notes: project guide, old vs new code, `Statement.hpp` explained (start at `docs/README.md`) |
-| `legacy/` | The original 2023 version, kept for reference |
 
 To add a table, add one 80-character line per column to `data/SYSTEM_TABLE`
 (same layout as the existing lines) and create an empty `data/<TABLE>_DATA` file.
