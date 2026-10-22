@@ -49,7 +49,8 @@ The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 
 | `examples/` | `select.sql`, `describe.sql`, `insert.sql`, `company.sql`. `insert.sql` adds rows to `data/`; `company.sql` holds the rows that filled `COMPANY_DATA`. |
 | `tests/` | 6 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
-| `Makefile`, `README.md` | Build rules and a quick start |
+| `Makefile`, `Doxyfile`, `README.md` | Build rules, Doxygen settings and a quick start |
+| `.github/workflows/doxygen.yml` | Rebuilds the Doxygen pages on GitHub after every push |
 
 One data change from 2023: the ruler line `0123456789...` at the top of `CAL_WEEKLY_DATA` was removed, because it was printed as a row. `SYSTEM_DATA` is no longer needed, since `DESCRIBE` now reads `SYSTEM_TABLE`.
 
