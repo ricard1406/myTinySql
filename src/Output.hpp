@@ -19,8 +19,4 @@ std::string renderText(const StatementResult& result);
 std::string renderHtml(const std::vector<StatementResult>& results, const std::optional<std::string>& sql,
                        const std::vector<TableSchema>& tables);
 
-/// The format the Android app reads: each row as <COLUMN>value</COLUMN> tags
-/// (or <VALUE> tags with ANDROID-LIST), inside a minimal HTML page.
-std::string renderAndroid(const std::vector<StatementResult>& results);
-
 }  // namespace tinysql

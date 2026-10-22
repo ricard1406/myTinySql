@@ -274,37 +274,4 @@ std::string renderHtml(const std::vector<StatementResult>& results, const std::o
     return page + std::string(kPageScript) + "</body>\n</html>\n";
 }
 
-std::string renderAndroid(const std::vector<StatementResult>& results)
-{
-    // Kept as the original version produced it, so the existing Android app can still parse it.
-    std::string page = "<!doctype html><html dir=\"ltr\" lang=\"it\"><head><meta charset=\"utf-8\">"
-                       "<title>Nuova scheda</title></HEAD><BODY>";
-    for (const StatementResult& result : results) {
-        if (result.silent) {
-            continue;
-        }
-        if (result.failed) {
-            page += "ERROR: " + escapeHtml(result.message);
-            continue;
-        }
-        if (!result.table) {
-            page += escapeHtml(result.message);
-            continue;
-        }
-        const ResultSet& table = *result.table;
-        page += "select is: " + escapeHtml(result.sql) + headerLine(table, "");
-        for (const auto& row : table.rows) {
-            for (std::size_t i = 0; i < row.size(); ++i) {
-                if (table.literal[i]) {
-                    page += escapeHtml(row[i]);
-                } else {
-                    const std::string& tag = table.valueTags ? std::string("VALUE") : table.headers[i];
-                    page += std::format("<{0}>{1}</{0}>", tag, escapeHtml(row[i]));
-                }
-            }
-        }
-    }
-    return page + "</BODY></HTML>";
-}
-
 }  // namespace tinysql

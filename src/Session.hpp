@@ -19,7 +19,6 @@ struct ResultSet {
     std::vector<bool> literal;          // true for a 'literal' SELECT item
     std::vector<std::size_t> storageWidths;  // width of each column in the data file (0 for a literal)
     std::vector<std::vector<std::string>> rows;
-    bool valueTags = false;             // ANDROID-LIST: Android output uses <VALUE> tags
     std::optional<std::size_t> idColumn;  // output column holding the row ID, if rows can be edited and deleted by ID
 };
 

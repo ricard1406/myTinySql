@@ -23,18 +23,10 @@ struct Condition {
     std::string value;
 };
 
-/// ANDROID-LIST <from> <to>: keep only output columns from..to (counted from 1).
-struct ColumnRange {
-    std::size_t from;
-    std::size_t to;
-};
-
 struct SelectStmt {
     std::vector<SelectItem> items;
     std::string table;
     std::optional<Condition> where;
-    std::optional<ColumnRange> androidList;
-    bool androidDistinct = false;  // skip rows whose first column repeats the previous row
 };
 
 struct InsertStmt {

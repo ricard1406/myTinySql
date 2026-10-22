@@ -1,7 +1,6 @@
 // Tokenizer and recursive-descent parser for the tiny SQL dialect.
 //
 //   SELECT <item>[,<item>...] FROM <table> [WHERE <col> <op> <value>]
-//          [ANDROID-LIST <from> <to> | ANDROID-DISTINCT]
 //   INSERT INTO <table> VALUES (<value>[,<value>...])
 //   UPDATE <table> SET <col> = <value>[,<col> = <value>...] WHERE <col> <op> <value>
 //   DELETE FROM <table> WHERE <col> <op> <value>
@@ -180,16 +179,6 @@ private:
         return next().text;
     }
 
-    std::size_t expectPositive(std::string_view what)
-    {
-        auto value = parseInteger(peek().kind == TokenKind::Word ? peek().text : "");
-        if (!value || *value < 1) {
-            fail(what);
-        }
-        ++pos_;
-        return static_cast<std::size_t>(*value);
-    }
-
     void expectEnd()
     {
         while (acceptSymbol(";") || acceptSymbol("@")) {
@@ -231,18 +220,6 @@ private:
 
         if (acceptKeyword("WHERE")) {
             stmt.where = parseCondition();
-        }
-
-        if (acceptKeyword("ANDROID-LIST")) {
-            ColumnRange range;
-            range.from = expectPositive("the first column number");
-            range.to = expectPositive("the last column number");
-            if (range.to < range.from) {
-                throw SqlError("ANDROID-LIST: the last column comes before the first");
-            }
-            stmt.androidList = range;
-        } else if (acceptKeyword("ANDROID-DISTINCT")) {
-            stmt.androidDistinct = true;
         }
 
         expectEnd();

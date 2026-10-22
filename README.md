@@ -8,7 +8,6 @@ make test                                   # runs tests/*.sql and compares with
 ./myTinySql --sqlfile=examples/select.sql   # run a script
 ./myTinySql                                 # type statements interactively
 ./myTinySql --http                          # browser UI on http://localhost:8080 (show / add / edit / delete rows)
-./myTinySql --android                       # server for the Android app on port 8180
 ./myTinySql --help                          # all options
 ```
 

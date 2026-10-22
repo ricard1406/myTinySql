@@ -4,7 +4,7 @@ Copy of the online project guide, as of 2026-10-21, plus the DELETE and UPDATE s
 
 ## Overview
 
-myTinySQL is a small SQL interpreter that stores tables as plain-text files with fixed-width columns. It runs SQL scripts, takes statements typed at a prompt, and answers queries from a browser or an Android app. It began in August 2023 as a learning project and was rewritten in modern C++ on 2026-10-20.
+myTinySQL is a small SQL interpreter that stores tables as plain-text files with fixed-width columns. It runs SQL scripts, takes statements typed at a prompt, and answers queries from a browser page. It began in August 2023 as a learning project and was rewritten in modern C++ on 2026-10-20.
 
 The 2023 version, now kept in `legacy/`, was **C++** (g++, `std::string`, `std::vector`, `std::thread`), written in a mostly C style: global buffers allocated with `calloc`, manual offset arithmetic and `char[]` copies.
 
@@ -17,33 +17,33 @@ What it supports:
 - `UPDATE <table> SET <col> = <value>, ... WHERE <col> <op> <value>`: changes the matching rows (the WHERE is required)
 - `DELETE FROM <table> WHERE <col> <op> <value>`: removes the matching rows (the WHERE is required)
 - `COLUMN <col> FORMAT A<n>` to set a column's display width (the idea comes from Oracle SQL*Plus)
-- `DESCRIBE` and `DESCRIBE <table>`, `REM` and `--` comments, and the Android clauses `ANDROID-LIST` and `ANDROID-DISTINCT`
-- Four ways to run it: a script file, an interactive prompt, a browser page on port 8080 (with buttons to show, add, edit and delete rows), or the Android server on port 8180
+- `DESCRIBE` and `DESCRIBE <table>`, and `REM` and `--` comments
+- Three ways to run it: a script file, an interactive prompt, or a browser page on port 8080 (with buttons to show, add, edit and delete rows)
 
 This guide describes the rewritten version. It was checked on 2026-10-20 by building with g++ 15.2 (no warnings) and running `make test` (6 test scripts, all passing).
 
 ## Project structure
 
-The code is in `src/` (2,161 lines in 15 files), the database in `data/`, scripts in `examples/` and `tests/`, notes in `docs/`, and the whole 2023 version in `legacy/`.
+The code is in `src/` (2,094 lines in 15 files), the database in `data/`, scripts in `examples/` and `tests/`, notes in `docs/`, and the whole 2023 version in `legacy/`.
 
 **Source code (`src/`)**
 
 | File | Lines | Role |
 | --- | --- | --- |
-| `main.cpp` | 184 | Reads the command-line options and starts script, interactive or server mode |
-| `Statement.hpp`, `Parser.cpp` | 87 + 404 | The statement types and the tokenizer and parser that build them. `splitStatements()` cuts a script into statements. |
-| `Session.hpp` / `.cpp` | 57 + 315 | Runs one statement at a time, keeps the `COLUMN` widths, and returns a `StatementResult` |
+| `main.cpp` | 177 | Reads the command-line options and starts script, interactive or server mode |
+| `Statement.hpp`, `Parser.cpp` | 79 + 381 | The statement types and the tokenizer and parser that build them. `splitStatements()` cuts a script into statements. |
+| `Session.hpp` / `.cpp` | 56 + 302 | Runs one statement at a time, keeps the `COLUMN` widths, and returns a `StatementResult` |
 | `Catalog.hpp` / `.cpp` | 54 + 118 | Reads `SYSTEM_TABLE` into `TableSchema` objects: each table's columns and their positions |
 | `TableFile.hpp` / `.cpp` | 56 + 180 | Reads the rows of a `<TABLE>_DATA` file, appends new ones, and edits or removes rows (through a temporary file) |
-| `Output.hpp` / `.cpp` | 26 + 310 | Turns results into console text, the HTML page with its testing tools, or the Android tag format |
-| `Server.hpp` / `.cpp` | 33 + 252 | A small HTTP server for the browser and Android modes |
+| `Output.hpp` / `.cpp` | 22 + 277 | Turns results into console text or the HTML page with its testing tools |
+| `Server.hpp` / `.cpp` | 28 + 279 | A small HTTP server for the browser page: one thread per connection, SQL one request at a time |
 | `Util.hpp` / `.cpp` | 25 + 60 | `SqlError` and string helpers: trim, case-insensitive compare, integer parsing |
 
 **Everything else**
 
 | Path | Content |
 | --- | --- |
-| `data/` | `SYSTEM_TABLE` (25 lines, 4 tables), `EMPLOY_DATA` (68 rows), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows) |
+| `data/` | `SYSTEM_TABLE` (25 lines, 4 tables), `EMPLOY_DATA` (70 rows), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows) |
 | `examples/` | `select.sql`, `describe.sql`, `insert.sql`, `company.sql`. `insert.sql` adds rows to `data/`; `company.sql` holds the rows that filled `COMPANY_DATA`. |
 | `tests/` | 6 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
@@ -57,10 +57,10 @@ One data change: the ruler line `0123456789...` at the top of `CAL_WEEKLY_DATA` 
 Every input, from a script file, the prompt or an HTTP request, becomes SQL text. `splitStatements()` cuts that text at newlines and `;`. `parseStatement()` turns each piece into a typed `Statement`, and `Session::execute()` runs it.
 
 ```
- --sqlfile=FILE      no option          --http :8080        --android :8180
- (a script)          (tinysql> prompt)  (browser form)      (GET /SQL, IP allow-list)
-        \                 |                  |                    /
-         v                v                  v                   v
+     --sqlfile=FILE             no option                --http :8080
+     (a script)                 (tinysql> prompt)        (browser page with buttons)
+            \                          |                          /
+             v                         v                         v
  +-------------------------------------------------------------------------+
  |  main.cpp and Server.cpp: read the script or decode the HTTP request    |
  +-------------------------------------------------------------------------+
@@ -72,29 +72,28 @@ Every input, from a script file, the prompt or an HTTP request, becomes SQL text
  +-------------------------------------------------------------------------+
         |                  |                   |                  |
         v                  v                   v                  v
-     INSERT             SELECT              COLUMN            DESCRIBE
-  checks widths,   columns, WHERE,      saves a display     tables or
-  next ID          Android clauses      width               columns
+   Change rows          SELECT              COLUMN            DESCRIBE
+  INSERT, UPDATE,   columns, WHERE      saves a display     tables or
+  DELETE                                width               columns
         |                  |  \
-   appends             reads   \ StatementResult
+     writes             reads   \ StatementResult
         v                  v    v
  +--------------------------------+   +--------------------------------------+
  | Catalog.cpp + TableFile.cpp    |   | Output.cpp                           |
- | data/SYSTEM_TABLE: positions   |   | console text, HTML page with a form, |
- | data/TABLE_DATA: one row/line  |   | Android: one tag per field           |
+ | data/SYSTEM_TABLE: positions   |   | console text, or the HTML page       |
+ | data/TABLE_DATA: one row/line  |   | with its buttons                     |
  +--------------------------------+   +--------------------------------------+
 ```
-
 `Statement` is a `std::variant` of `SelectStmt`, `InsertStmt`, `UpdateStmt`, `DeleteStmt`, `ColumnFormatStmt`, `DescribeStmt` and `CommentStmt`. `std::visit` picks the matching `Session::run()` overload, so adding a command means adding one struct, one parser function and one `run()`.
 
 ### What a SELECT does, step by step
 
-1. The parser builds a `SelectStmt`: the list of items (`*`, column names, `'literals'`), the table name, and the optional `WHERE` and Android clause.
+1. The parser builds a `SelectStmt`: the list of items (`*`, column names, `'literals'`), the table name, and the optional `WHERE`.
 2. `Catalog::load()` reads `SYSTEM_TABLE`, and `catalog.table("EMPLOY")` returns its `TableSchema`. An unknown table or column raises a `SqlError`.
 3. Each item becomes an output column with a display width: the `COLUMN ... FORMAT` width if one was set, otherwise the column width, widened if needed to fit the column name.
 4. `TableFile::readRows()` cuts every line of `EMPLOY_DATA` into one value per column, from `FROM` to `TO` inclusive.
 5. Rows that fail the `WHERE` test are skipped. Numbers compare as numbers (`ID <= 3`), text as text.
-6. The result is a `ResultSet` (headers, widths, rows). `Output.cpp` renders it as console text, an HTML table, or Android tags.
+6. The result is a `ResultSet` (headers, widths, rows). `Output.cpp` renders it as console text or an HTML table.
 
 INSERT works the other way round. When the table's first column is ID and one value is missing, the next ID (highest + 1) is put in front. Each value is checked against its column width and placed at its position in a line of spaces. `TableFile::append()` then adds the line to the end of the file.
 
@@ -169,9 +168,8 @@ Tables are read from `data/`, relative to the current directory. Use `--data=DIR
 | Script | `./myTinySql --sqlfile=examples/select.sql` | `--sqlfile=-` reads standard input. The exit code is 1 if any statement failed. |
 | Interactive | `./myTinySql` | A `tinysql>` prompt; one or more statements per line; Ctrl+D quits |
 | Browser | `./myTinySql --http` | Open http://localhost:8080: buttons to show, describe and add rows, Edit and Delete on each row, and a box for any SQL |
-| Android | `./myTinySql --android` | `GET /<SQL>` on port 8180. The reply uses the same tag format as in 2023. |
 
-Other options: `--port=N`, `--data=DIR`, `--help`, and `--allow=LIST`, a comma-separated list of client IP prefixes. The Android default is `151.,93.,127.`: the 2023 allow-list plus your own machine. The HTTP server accepts everyone unless you pass `--allow`.
+Other options: `--port=N`, `--data=DIR`, `--help`, and `--allow=LIST`, a comma-separated list of client IP prefixes the server accepts, for example `--allow=127.,192.168.` for your own machine and home network. Without it, the server accepts everyone.
 
 ### The web page
 
@@ -206,7 +204,6 @@ Keywords and table and column names can be upper or lower case. Write one statem
 | COLUMN | `COLUMN <col> FORMAT A<n>`: console display width, for the rest of the script, session or request |
 | DESCRIBE | `DESCRIBE` lists the tables; `DESCRIBE <TABLE>` lists the columns and their positions |
 | Comments | `REM ...` or `-- ...` |
-| Android clauses | `... ANDROID-LIST <from> <to>` keeps output columns from..to and tags them `<VALUE>`. `... ANDROID-DISTINCT` skips a row whose first column equals the previous row's. |
 
 ### Example session
 
@@ -248,7 +245,7 @@ curl 'http://localhost:8080/?subject=SELECT+ID%2CNOME%2CCITTA+FROM+EMPLOY+WHERE+
 
 ## Changes from 2023 and what is left
 
-The rewrite fixes every bug found in the 2023 version. The table and catalogue file formats, the command-line modes and the Android reply format stay the same.
+The rewrite fixes every bug found in the 2023 version. The table and catalogue file formats stay the same. The Android server of 2023 was never used by any app, so it was removed on 2026-10-22 (its code is still in `legacy/`).
 
 | 2023 problem | Now |
 | --- | --- |
@@ -268,7 +265,6 @@ The rewrite fixes every bug found in the 2023 version. The table and catalogue f
 - One WHERE condition only: no AND or OR, and no CREATE TABLE, ORDER BY or JOIN.
 - `TYPE` (N1 or S1) is still not enforced. Widths count bytes, so an accented letter such as ò takes 2.
 - Inside the server, SQL runs one request at a time (a `std::mutex`), but two separate programs writing the same data file at once could still clash.
-- The Android reply keeps its 2023 format so the existing app can still read it. It is not valid HTML or XML.
 
 **Ideas for next steps**
 

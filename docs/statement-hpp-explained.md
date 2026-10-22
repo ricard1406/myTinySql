@@ -57,7 +57,7 @@ typedef struct {
 
 ---
 
-## 3. `Condition` and `ColumnRange`: small groups of values
+## 3. `Condition`: a small group of values
 
 ```cpp
 /// WHERE <column> <op> <value>, with op one of = != <> < <= > >=
@@ -66,14 +66,8 @@ struct Condition {
     std::string op;
     std::string value;
 };
-
-/// ANDROID-LIST <from> <to>: keep only output columns from..to (counted from 1).
-struct ColumnRange {
-    std::size_t from;
-    std::size_t to;
-};
 ```
-These are just named groups of values. `ColumnRange` is almost identical in C. `Condition` in C would need either fixed buffers (`char column[21]; char op[3]; char value[81];`, which risk overflow) or three `malloc`'d pointers.
+This is just a named group of values. In C it would need either fixed buffers (`char column[21]; char op[3]; char value[81];`, which risk overflow) or three `malloc`'d pointers.
 
 ---
 
@@ -84,14 +78,14 @@ struct SelectStmt {
     std::vector<SelectItem> items;            // any number of items
     std::string table;
     std::optional<Condition> where;           // there may be no WHERE
-    std::optional<ColumnRange> androidList;   // there may be no ANDROID-LIST
-    bool androidDistinct = false;             // default value, set automatically
 };
 ```
 
+(Until 2026-10-22 it also had two fields for the Android clauses, `ANDROID-LIST` and `ANDROID-DISTINCT`. They were removed together with the unused Android mode.)
+
 - `std::vector<SelectItem>` is a growable array that knows its own length.
 - `std::optional<Condition>` means "a Condition, or nothing". You test it with `if (stmt.where)` and use it as `stmt.where->column`. The type itself says the WHERE is optional.
-- `= false` is a default member initializer, so a new `SelectStmt` never contains garbage.
+- Every member here has a type that starts out empty (an empty vector, an empty string, no condition), so a new `SelectStmt` never contains garbage. For a plain type such as `bool` you write a *default member initializer* yourself, as `Session.hpp` does: `bool failed = false;`.
 
 **In C:**
 ```c
@@ -101,9 +95,6 @@ typedef struct {
     char       *table;
     int         hasWhere;       /* "optional" by convention:    */
     Condition   where;          /* only valid if hasWhere != 0  */
-    int         hasAndroidList;
-    ColumnRange androidList;
-    int         androidDistinct;
 } SelectStmt;
 
 SelectStmt s = {0};   /* you must remember to zero it */

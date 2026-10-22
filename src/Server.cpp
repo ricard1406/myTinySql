@@ -131,7 +131,7 @@ void handleClient(const ServerConfig& config, int fd, const std::string& client)
         sendAll(fd, httpResponse("405 Method Not Allowed", "<p>Only GET requests are supported.</p>"));
         return;
     }
-    if (config.mode == ServerMode::Http && target.substr(0, target.find('?')) != "/") {
+    if (target.substr(0, target.find('?')) != "/") {
         sendAll(fd, httpResponse("404 Not Found", "<p>Not found.</p>"));
         return;
     }
@@ -150,7 +150,7 @@ std::string runRequest(const ServerConfig& config, const std::string& request, c
 {
     std::cout << std::format("[{}] GET {}\n", client, target);
 
-    const std::optional<std::string> sql = sqlFromRequest(config.mode, request);
+    const std::optional<std::string> sql = sqlFromRequest(request);
     Session session(config.dataDir);
     const auto results = sql ? session.executeScript(*sql) : std::vector<StatementResult>{};
     for (const StatementResult& result : results) {
@@ -158,19 +158,13 @@ std::string runRequest(const ServerConfig& config, const std::string& request, c
     }
     std::cout << std::flush;
 
-    std::string body;
-    if (config.mode == ServerMode::Http) {
-        // The table list feeds the page's tools; without a readable catalogue the page simply has none.
-        std::vector<TableSchema> tables;
-        try {
-            tables = Catalog::load(config.dataDir).tables();
-        } catch (const SqlError&) {
-        }
-        body = renderHtml(results, sql, tables);
-    } else {
-        body = renderAndroid(results);
+    // The table list feeds the page's tools; without a readable catalogue the page simply has none.
+    std::vector<TableSchema> tables;
+    try {
+        tables = Catalog::load(config.dataDir).tables();
+    } catch (const SqlError&) {
     }
-    return body;
+    return renderHtml(results, sql, tables);
 }
 
 }  // namespace
@@ -200,20 +194,11 @@ std::string urlDecode(std::string_view text)
     return result;
 }
 
-std::optional<std::string> sqlFromRequest(ServerMode mode, std::string_view request)
+std::optional<std::string> sqlFromRequest(std::string_view request)
 {
     const std::string_view target = requestTarget(request);
     if (target.empty()) {
         return std::nullopt;
-    }
-
-    if (mode == ServerMode::Android) {
-        // GET /SELECT+*+FROM+EMPLOY;SELECT+...   ('+' = space, ';' separates statements)
-        std::string sql = urlDecode(target.substr(1));
-        if (sql.empty()) {
-            return std::nullopt;
-        }
-        return sql;
     }
 
     // GET /?subject=SELECT+*+FROM+EMPLOY%3B...
@@ -252,9 +237,7 @@ void runServer(const ServerConfig& config)
     if (::listen(server.fd(), 10) < 0) {
         throwSystemError("listen");
     }
-    std::cout << std::format("{} server listening on port {}\n",
-                             config.mode == ServerMode::Http ? "HTTP" : "Android", config.port)
-              << std::flush;
+    std::cout << std::format("HTTP server listening on port {}\n", config.port) << std::flush;
 
     while (true) {
         sockaddr_in clientAddr{};

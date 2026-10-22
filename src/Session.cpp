@@ -128,12 +128,6 @@ StatementResult Session::run(const SelectStmt& stmt)
     }
 
     ResultSet result;
-    if (stmt.androidList) {
-        const std::size_t first = std::min(stmt.androidList->from - 1, outputs.size());
-        const std::size_t last = std::min(stmt.androidList->to, outputs.size());
-        outputs = std::vector<Output>(outputs.begin() + first, outputs.begin() + last);
-        result.valueTags = true;
-    }
 
     std::optional<std::size_t> whereIndex;
     if (stmt.where) {
@@ -159,7 +153,6 @@ StatementResult Session::run(const SelectStmt& stmt)
         }
     }
 
-    std::optional<std::string> previousFirst;
     for (const Row& row : TableFile(schema, catalog.dataFile(schema)).readRows()) {
         if (whereIndex && !matches(row[*whereIndex], *stmt.where)) {
             continue;
@@ -168,12 +161,6 @@ StatementResult Session::run(const SelectStmt& stmt)
         values.reserve(outputs.size());
         for (const Output& output : outputs) {
             values.push_back(output.source ? row[*output.source] : output.header);
-        }
-        if (stmt.androidDistinct && !values.empty()) {
-            if (previousFirst == values.front()) {
-                continue;
-            }
-            previousFirst = values.front();
         }
         result.rows.push_back(std::move(values));
     }

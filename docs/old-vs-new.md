@@ -6,7 +6,7 @@ A summary to help you study `src/`. The 2023 files are in `legacy/`.
 
 | 2023 (`legacy/`) | New (`src/`) | What changed |
 | --- | --- | --- |
-| `myTinySqlMain.cpp`: `main()` plus two copy-pasted socket servers | `main.cpp` and `Server.cpp` | One server serves both modes; a setting chooses HTTP or Android |
+| `myTinySqlMain.cpp`: `main()` plus two copy-pasted socket servers (browser and Android) | `main.cpp` and `Server.cpp` | One browser server. The Android server was never used by any app and was removed on 2026-10-22. |
 | `myTinySql.cpp`: `SqlStatemen()`, a chain of `if` checks on the first word | `Parser.cpp` and `Session.cpp` | The text is parsed first, then run |
 | `myTinySELECT.cpp`, `myTinyINSERT.cpp`, `myTinyCOLUMN.cpp`, `myTinyDESCRIBE.cpp` | One `run()` per statement type in `Session.cpp` | Each `run()` is about 20–70 lines, and none prints anything itself |
 | `myToolBox.cpp` (1129 lines doing everything) | Split into `Catalog`, `TableFile`, `Output`, `Util` | Each file has one job |
@@ -28,7 +28,7 @@ A summary to help you study `src/`. The 2023 files are in `legacy/`.
 
 4. **`exit()` became exceptions.** Old: `ErrorExit()` stopped the whole program, server included. New: any problem `throw`s a `SqlError`, `Session::execute()` catches it and returns a failed result, and the next statement runs.
 
-5. **Running is separate from printing.** Old: SELECT filled `Table2Print`, then printed it in three different ways. New: `Session` returns plain data (`StatementResult`), and `Output.cpp` turns it into text, HTML or Android tags. This makes each part easy to test on its own.
+5. **Running is separate from printing.** Old: SELECT filled `Table2Print`, then printed it in three different ways. New: `Session` returns plain data (`StatementResult`), and `Output.cpp` turns it into console text or an HTML page. This makes each part easy to test on its own.
 
 6. **Fixed offsets became a catalogue loaded at run time.** Old: `SetConstants()` hard-coded the field positions before every statement. New: `Catalog::load()` reads `SYSTEM_TABLE` into `TableSchema` / `Column{name, type, from, to}`. Only the catalogue's own layout is still fixed (`kTable{15, 34}` and so on).
 

@@ -3,7 +3,6 @@
 //   ./myTinySql --sqlfile=examples/select.sql   run a script
 //   ./myTinySql                                 type statements (or pipe them in)
 //   ./myTinySql --http                          browser UI on http://localhost:8080
-//   ./myTinySql --android                       server for the Android app on port 8180
 
 #include <unistd.h>
 
@@ -30,19 +29,18 @@ constexpr std::string_view kUsage = R"(Usage: myTinySql [options]
 
   --sqlfile=FILE   run the statements in FILE ('-' for standard input)
   --http           start the browser server (default port 8080)
-  --android        start the Android app server (default port 8180)
-  --port=N         listen on port N instead of the default
-  --allow=LIST     comma-separated client IP prefixes the server accepts
-                   (Android default: 151.,93.,127.  HTTP default: everyone)
+  --port=N         listen on port N instead of 8080
+  --allow=LIST     comma-separated client IP prefixes the server accepts,
+                   e.g. 127.,192.168. (default: everyone)
   --data=DIR       directory with SYSTEM_TABLE and the *_DATA files (default: data)
   --help           show this help
 
-With no --sqlfile and no server option, statements are read from standard input.
+With no --sqlfile and no --http, statements are read from standard input.
 )";
 
 struct Options {
     std::optional<std::string> sqlFile;
-    std::optional<ServerMode> server;
+    bool http = false;
     std::optional<std::uint16_t> port;
     std::optional<std::vector<std::string>> allow;
     std::filesystem::path dataDir = "data";
@@ -89,9 +87,7 @@ Options parseOptions(int argc, char** argv)
         } else if (name == "--sqlfile") {
             options.sqlFile = std::string(requireValue());
         } else if (name == "--http") {
-            options.server = ServerMode::Http;
-        } else if (name == "--android") {
-            options.server = ServerMode::Android;
+            options.http = true;
         } else if (name == "--port") {
             const std::string_view text = requireValue();
             std::uint16_t port = 0;
@@ -108,8 +104,8 @@ Options parseOptions(int argc, char** argv)
             throw std::invalid_argument(std::format("unknown option '{}'", arg));
         }
     }
-    if (options.sqlFile && options.server) {
-        throw std::invalid_argument("choose either --sqlfile or a server mode, not both");
+    if (options.sqlFile && options.http) {
+        throw std::invalid_argument("choose either --sqlfile or --http, not both");
     }
     return options;
 }
@@ -151,14 +147,11 @@ int main(int argc, char** argv)
             return 2;
         }
 
-        if (options.server) {
-            const bool android = *options.server == ServerMode::Android;
+        if (options.http) {
             ServerConfig config{
-                .mode = *options.server,
-                .port = options.port.value_or(android ? 8180 : 8080),
+                .port = options.port.value_or(8080),
                 .dataDir = options.dataDir,
-                .allowedClients = options.allow.value_or(
-                    android ? std::vector<std::string>{"151.", "93.", "127."} : std::vector<std::string>{}),
+                .allowedClients = options.allow.value_or(std::vector<std::string>{}),
             };
             runServer(config);
             return 0;
