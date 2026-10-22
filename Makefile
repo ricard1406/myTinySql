@@ -22,6 +22,7 @@ test: myTinySql
 
 # HTML documentation from the Doxygen comments, in build/doxygen/html/.
 doxygen:
+	mkdir -p build/doxygen
 	PROJECT_NUMBER="$$(git describe --tags --always 2>/dev/null)" doxygen Doxyfile
 	@echo "Open build/doxygen/html/index.html"
 
