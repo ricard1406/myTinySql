@@ -255,34 +255,3 @@ The same query from a terminal, in the browser mode:
 ```bash
 curl 'http://localhost:8080/?subject=SELECT+ID%2CNOME%2CCITTA+FROM+EMPLOY+WHERE+CITTA+%3D+Napoli'
 ```
-
-## Changes from 2023 and what is left
-
-The rewrite fixes every bug found in the 2023 version. The table and catalogue file formats stay the same. The Android server of 2023 was never used by any app, so it was removed on 2026-10-22.
-
-| 2023 problem | Now |
-| --- | --- |
-| `DESCRIBE` printed `IDTABLE` 11 times | Lists the 4 tables; `DESCRIBE <table>` lists the columns |
-| Last character of every column lost (CALORIES `13743` shown as `1374`) | Columns are read from FROM to TO inclusive |
-| Ruler line `0123456789...` printed as a row | Removed from `data/CAL_WEEKLY_DATA` |
-| WHERE on a column not in the SELECT list returned nothing | WHERE works on any column, with 7 comparison operators |
-| HTTP headers were run as SQL | Only the request line is read; other paths answer 404 |
-| One error stopped the whole program, server included | The error is printed and the next statement runs |
-| Values too long for a column were cut silently | `INSERT` refuses them with an error |
-| New ID taken from the last line only | Highest ID + 1; an explicit ID that already exists is refused |
-| Fixed buffers: 255 output lines, 10,000-byte reply | No size limits (`std::string`, `std::vector`) |
-| Debug prints such as `Point A` and `DEB97` | Removed |
-
-**Still missing**
-
-- One WHERE condition only: no AND or OR, and no CREATE TABLE, ORDER BY or JOIN.
-- `TYPE` (N1 or S1) is still not enforced. Widths count bytes, so an accented letter such as ò takes 2.
-- Inside the server, SQL runs one request at a time (a `std::mutex`), but two separate programs writing the same data file at once could still clash.
-
-**Ideas for next steps**
-
-- [ ] Add AND and OR to WHERE
-- [x] Add DELETE, rewriting the data file through a temporary copy (done 2026-10-21)
-- [x] Add UPDATE the same way, with an Edit button on the web page (done 2026-10-21)
-- [ ] Add CREATE TABLE, which writes the `SYSTEM_TABLE` lines for you
-- [ ] Put the project under git
