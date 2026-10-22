@@ -10,7 +10,10 @@
 #include <charconv>
 #include <format>
 #include <iostream>
+#include <mutex>
 #include <system_error>
+#include <thread>
+#include <utility>
 
 #include "Catalog.hpp"
 #include "Output.hpp"
@@ -22,6 +25,14 @@ namespace tinysql {
 namespace {
 
 constexpr std::size_t kMaxRequestSize = 64 * 1024;
+
+// How long a connection may stay silent before it is closed. Browsers open connections early
+// ("preconnect") and may send nothing on them for several seconds.
+constexpr int kIdleSeconds = 30;
+
+// Each connection is read in its own thread, but only one request at a time may run SQL and
+// write to the console: this lock keeps the table files and the log from being mixed up.
+std::mutex workMutex;
 
 /// Owns a socket descriptor and closes it when it goes out of scope.
 class Socket {
@@ -35,6 +46,11 @@ public:
     }
     Socket(const Socket&) = delete;
     Socket& operator=(const Socket&) = delete;
+
+    // Moving hands the descriptor over (here: to the thread that serves the connection);
+    // the moved-from Socket is left empty, so the descriptor is closed exactly once.
+    Socket(Socket&& other) noexcept : fd_(std::exchange(other.fd_, -1)) {}
+    Socket& operator=(Socket&&) = delete;
 
     int fd() const { return fd_; }
 
@@ -97,20 +113,42 @@ std::string clientAddress(const sockaddr_in& address)
     return text;
 }
 
+std::string runRequest(const ServerConfig& config, const std::string& request, const std::string& client,
+                       std::string_view target);
+
 void handleClient(const ServerConfig& config, int fd, const std::string& client)
 {
     const std::string request = readRequest(fd);
-    const std::string_view target = requestTarget(request);
-    std::cout << std::format("[{}] GET {}\n", client, target) << std::flush;
+    if (trim(request).empty()) {
+        // An idle (preconnected) connection that never sent a request: close it without
+        // answering. Had we answered, the browser could later read that answer as the reply
+        // to the request it sends on this connection.
+        return;
+    }
 
+    const std::string_view target = requestTarget(request);
     if (target.empty()) {
-        sendAll(fd, httpResponse("400 Bad Request", "<p>Only GET requests are supported.</p>"));
+        sendAll(fd, httpResponse("405 Method Not Allowed", "<p>Only GET requests are supported.</p>"));
         return;
     }
     if (config.mode == ServerMode::Http && target.substr(0, target.find('?')) != "/") {
         sendAll(fd, httpResponse("404 Not Found", "<p>Not found.</p>"));
         return;
     }
+
+    std::string body;
+    {
+        const std::scoped_lock lock(workMutex);  // one request at a time from here on
+        body = runRequest(config, request, client, target);
+    }  // the lock is released here, before the (possibly slow) send
+    sendAll(fd, httpResponse("200 OK", body));
+}
+
+/// Runs the SQL of one request, logs it, and returns the page to send back. Call with workMutex held.
+std::string runRequest(const ServerConfig& config, const std::string& request, const std::string& client,
+                       std::string_view target)
+{
+    std::cout << std::format("[{}] GET {}\n", client, target);
 
     const std::optional<std::string> sql = sqlFromRequest(config.mode, request);
     Session session(config.dataDir);
@@ -132,7 +170,7 @@ void handleClient(const ServerConfig& config, int fd, const std::string& client)
     } else {
         body = renderAndroid(results);
     }
-    sendAll(fd, httpResponse("200 OK", body));
+    return body;
 }
 
 }  // namespace
@@ -229,7 +267,7 @@ void runServer(const ServerConfig& config)
             throwSystemError("accept");
         }
 
-        const timeval timeout{.tv_sec = 5, .tv_usec = 0};
+        const timeval timeout{.tv_sec = kIdleSeconds, .tv_usec = 0};
         ::setsockopt(client.fd(), SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
 
         const std::string ip = clientAddress(clientAddr);
@@ -237,15 +275,21 @@ void runServer(const ServerConfig& config)
             config.allowedClients.empty() ||
             std::ranges::any_of(config.allowedClients, [&](const std::string& prefix) { return ip.starts_with(prefix); });
         if (!allowed) {
+            const std::scoped_lock lock(workMutex);
             std::cout << std::format("[{}] rejected: not in the allowed clients\n", ip) << std::flush;
             continue;
         }
 
-        try {
-            handleClient(config, client.fd(), ip);
-        } catch (const std::exception& e) {
-            std::cerr << std::format("[{}] error: {}\n", ip, e.what());
-        }
+        // Serve the connection in its own thread, so a slow or silent client never makes the
+        // others wait. The thread owns the socket (moved in) and closes it when it ends.
+        std::thread([config, ip, socket = std::move(client)] {
+            try {
+                handleClient(config, socket.fd(), ip);
+            } catch (const std::exception& e) {
+                const std::scoped_lock lock(workMutex);
+                std::cerr << std::format("[{}] error: {}\n", ip, e.what());
+            }
+        }).detach();
     }
 }
 

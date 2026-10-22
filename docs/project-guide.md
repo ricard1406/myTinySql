@@ -45,7 +45,7 @@ The code is in `src/` (2,161 lines in 15 files), the database in `data/`, script
 | --- | --- |
 | `data/` | `SYSTEM_TABLE` (25 lines, 4 tables), `EMPLOY_DATA` (68 rows), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows) |
 | `examples/` | `select.sql`, `describe.sql`, `insert.sql`, `company.sql`. `insert.sql` adds rows to `data/`; `company.sql` holds the rows that filled `COMPANY_DATA`. |
-| `tests/` | 6 test scripts, each with its `.expected` output, and `run_tests.sh` |
+| `tests/` | 6 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
 | `legacy/` | Every file of the 2023 version, unchanged: sources, old Makefile, `.o` files, old scripts, scratch tests and the stray `index.html` |
 | `Makefile`, `README.md` | Build rules and a quick start |
@@ -150,13 +150,13 @@ The build needs `make` and g++ 13 or newer, because the code uses C++20 and `std
 ```bash
 cd ~/Projects/myTinySQL
 make          # builds ./myTinySql; object files go to build/
-make test     # runs the 6 test scripts on a copy of data/
+make test     # runs the 6 test scripts on a copy of tests/data/
 make clean    # removes build/ and the binary
 ```
 
 The Makefile compiles every `src/*.cpp` with `-std=c++20 -Wall -Wextra -Wpedantic -O2`, and the build has no warnings. It tracks header dependencies (`-MMD`), so editing a `.hpp` file rebuilds every file that includes it.
 
-**Tests:** each `tests/NAME.sql` runs on a fresh copy of `data/`, and its output must match `tests/NAME.expected` exactly. If you change the output on purpose, run `tests/run_tests.sh --update` and check the diff of the `.expected` files.
+**Tests:** each `tests/NAME.sql` runs on a fresh copy of `tests/data/`, a frozen set of the tables (so your own changes to `data/` don't affect the tests), and its output must match `tests/NAME.expected` exactly. If you change the output on purpose, run `tests/run_tests.sh --update` and check the diff of the `.expected` files.
 
 Tables are read from `data/`, relative to the current directory. Use `--data=DIR` to point somewhere else.
 
@@ -187,6 +187,10 @@ Other options: `--port=N`, `--data=DIR`, `--help`, and `--allow=LIST`, a comma-s
 | **Delete** on each row that has an ID (asks for confirmation first) | `DELETE FROM <table> WHERE ID = <n>;SELECT * FROM <table>` |
 
 The page remembers the table the last statement used. `SYSTEM_TABLE` has no add-row form and no Edit or Delete buttons: it is edited by hand.
+
+### How the server handles connections
+
+Each browser connection is served in its own thread, so one slow or silent connection never makes the others wait. Browsers such as Chromium open connections early ("preconnect") and may send nothing on them for a while; the server waits up to 30 seconds and then closes such a connection without answering, and the browser simply opens a new one. Running the SQL is still one request at a time: a `std::mutex` makes sure two requests never change the same file together.
 
 ### Commands
 
@@ -263,7 +267,7 @@ The rewrite fixes every bug found in the 2023 version. The table and catalogue f
 
 - One WHERE condition only: no AND or OR, and no CREATE TABLE, ORDER BY or JOIN.
 - `TYPE` (N1 or S1) is still not enforced. Widths count bytes, so an accented letter such as ò takes 2.
-- The server handles one request at a time. Two programs writing the same data file at once could still clash.
+- Inside the server, SQL runs one request at a time (a `std::mutex`), but two separate programs writing the same data file at once could still clash.
 - The Android reply keeps its 2023 format so the existing app can still read it. It is not valid HTML or XML.
 
 **Ideas for next steps**

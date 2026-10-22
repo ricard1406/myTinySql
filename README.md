@@ -33,7 +33,7 @@ REM a comment
 | `src/` | The interpreter: parser, session, table files, output, servers |
 | `data/` | The database: `SYSTEM_TABLE` (column positions of every table) and one `<TABLE>_DATA` file per table |
 | `examples/` | Sample scripts (`insert.sql` adds rows to `data/`) |
-| `tests/` | Golden-output tests, run on a copy of `data/` |
+| `tests/` | Golden-output tests, run on a frozen copy of the tables in `tests/data/` |
 | `docs/` | Study notes: project guide, old vs new code, `Statement.hpp` explained (start at `docs/README.md`) |
 | `legacy/` | The original 2023 version, kept for reference |
 

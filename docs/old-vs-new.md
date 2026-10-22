@@ -34,7 +34,7 @@ A summary to help you study `src/`. The 2023 files are in `legacy/`.
 
 7. **Resources clean themselves up (RAII).** A `Socket` class closes its descriptor in its destructor, and files are `std::ifstream` / `std::ofstream`. There is no manual `close()` or `free()`.
 
-8. **No threads.** Old: each request started a `std::thread` and immediately `join()`ed it, so it gained nothing. New: requests are handled one at a time, which also means two INSERTs from the server can't race each other.
+8. **Threads used for a reason.** Old: each request started a `std::thread` and immediately `join()`ed it, so it gained nothing. New (since 2026-10-22): each connection is served in its own thread, so a browser that opens a connection early and sends nothing ("preconnect", which Chromium does) never blocks the others. Only the reading happens in parallel: running the SQL and writing to the console is guarded by one `std::mutex` (`workMutex` in `Server.cpp`, taken with `std::scoped_lock`), so two INSERTs can never write the same file at once.
 
 9. **Modern C++ features to look for:** `std::string_view` (strings read without copying), `std::optional` (a value that may be missing, like `indexOf()`), `std::format`, designated initializers (`Column{.name = ..., .from = ...}`), `std::ranges::find_if`, and the `<=>` comparison in `matches()`.
 

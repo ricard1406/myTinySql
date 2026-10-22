@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Runs every tests/NAME.sql against a fresh copy of data/ and compares the output
+# Runs every tests/NAME.sql against a fresh copy of tests/data/ and compares the output
 # with tests/NAME.expected. Use --update to rewrite the .expected files.
+#
+# tests/data/ is a frozen copy of the tables, so the results don't change when you
+# add, edit or delete rows in your working data/ folder.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -15,7 +18,7 @@ failed=0
 for sql in "$root"/tests/*.sql; do
     name="$(basename "$sql" .sql)"
     rm -rf "$work/data"
-    cp -r "$root/data" "$work/data"
+    cp -r "$root/tests/data" "$work/data"
     "$bin" --data="$work/data" --sqlfile="$sql" > "$work/$name.out" || true
 
     if $update; then

@@ -1,7 +1,7 @@
 # myTinySQL - build with `make`, run the tests with `make test`.
 
 CXX      ?= g++
-CXXFLAGS ?= -std=c++20 -Wall -Wextra -Wpedantic -O2
+CXXFLAGS ?= -std=c++20 -Wall -Wextra -Wpedantic -O2 -pthread
 
 SRC := $(wildcard src/*.cpp)
 OBJ := $(SRC:src/%.cpp=build/%.o)
