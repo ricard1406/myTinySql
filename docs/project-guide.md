@@ -22,7 +22,7 @@ What it supports:
 
 This guide describes the rewritten version. It was checked on 2026-10-20 by building with g++ 15.2 (no warnings) and running `make test` (6 test scripts, all passing).
 
-**On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (a private repository for now). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), published on 2026-10-22.
+**On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (public since 2026-10-22). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), and the Doxygen documentation of the code is at [ricard1406.github.io/myTinySql](https://ricard1406.github.io/myTinySql/), rebuilt automatically after every push.
 
 ## Project structure
 
@@ -147,7 +147,7 @@ Problems are thrown as `SqlError`. `Session::execute()` catches them and returns
 
 The build needs `make` and g++ 13 or newer, because the code uses C++20 and `std::format`. Both are installed on this machine: g++ 15.2 and GNU Make 4.4.1.
 
-To get the code on another computer (while the repository is private, you must be logged in to GitHub as its owner):
+To get the code on another computer:
 
 ```bash
 git clone https://github.com/ricard1406/myTinySql.git
@@ -165,7 +165,7 @@ The Makefile compiles every `src/*.cpp` with `-std=c++20 -Wall -Wextra -Wpedanti
 
 **Tests:** each `tests/NAME.sql` runs on a fresh copy of `tests/data/`, a frozen set of the tables (so your own changes to `data/` don't affect the tests), and its output must match `tests/NAME.expected` exactly. If you change the output on purpose, run `tests/run_tests.sh --update` and check the diff of the `.expected` files.
 
-**Code documentation:** every function, method and declaration has a Doxygen comment (`/// @brief`, `@param`, `@return`, `@throws`). `make doxygen` turns them into HTML pages in `build/doxygen/html/`; open `index.html` in a browser. The settings are in `Doxyfile`, and Doxygen reports any declaration left undocumented (there are none today).
+**Code documentation:** every function, method and declaration has a Doxygen comment (`/// @brief`, `@param`, `@return`, `@throws`). `make doxygen` turns them into HTML pages in `build/doxygen/html/`; open `index.html` in a browser. On GitHub, the workflow in `.github/workflows/doxygen.yml` does the same after every push and publishes the pages at https://ricard1406.github.io/myTinySql/. The settings are in `Doxyfile`, and Doxygen reports any declaration left undocumented (there are none today).
 
 Tables are read from `data/`, relative to the current directory. Use `--data=DIR` to point somewhere else.
 

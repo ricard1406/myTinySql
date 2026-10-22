@@ -2,6 +2,8 @@
 
 A tiny SQL interpreter over fixed-width text files, written in C++20 as a learning project.
 
+Code documentation (Doxygen): https://ricard1406.github.io/myTinySql/
+
 ```bash
 make                                        # builds ./myTinySql (needs g++ 13 or newer)
 make test                                   # runs tests/*.sql and compares with tests/*.expected

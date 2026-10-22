@@ -1,0 +1,46 @@
+# Builds the Doxygen documentation and publishes it on GitHub Pages
+# (https://ricard1406.github.io/myTinySql/) after every push to main.
+name: Doxygen documentation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # also allows a manual run from the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push replaces a waiting one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history and tags, so the docs show a version like v0.1.0-4-g1999cec
+
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+
+      - name: Build the documentation
+        run: make doxygen
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/doxygen/html
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
