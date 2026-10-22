@@ -24,6 +24,8 @@ This guide describes the rewritten version. It was checked on 2026-10-20 by buil
 
 **On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (public since 2026-10-22). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), and the Doxygen documentation of the code is at [ricard1406.github.io/myTinySql](https://ricard1406.github.io/myTinySql/), rebuilt automatically after every push.
 
+> **DISCLAIMER: All data in this project is sample data, for testing purposes only. The companies, addresses and other values are fictional or AI generated. Many names in the `EMPLOY` table are those of historical Italian composers, used only as sample values; the other columns of those rows are not real information about them. Any other resemblance to real persons, living or dead, or actual places is purely coincidental.**
+
 ## Project structure
 
 The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 lines in all; the database in `data/`, scripts in `examples/` and `tests/`, and notes in `docs/`.
