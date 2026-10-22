@@ -1,3 +1,6 @@
+/// @file Catalog.cpp
+/// @brief Reading SYSTEM_TABLE into Catalog, TableSchema and Column objects.
+
 #include "Catalog.hpp"
 
 #include <algorithm>
@@ -10,18 +13,24 @@ namespace tinysql {
 
 namespace {
 
-// SYSTEM_TABLE describes itself in its first lines; these are the positions of its own fields.
+/// @brief The position of one field in a SYSTEM_TABLE line.
+///
+/// SYSTEM_TABLE describes itself in its first lines; the constants below are the positions of its own fields.
 struct Field {
-    std::size_t from;
-    std::size_t to;
+    std::size_t from;  ///< First character, counted from 0.
+    std::size_t to;    ///< Last character, inclusive.
 };
-constexpr Field kTable{15, 34};
-constexpr Field kName{35, 54};
-constexpr Field kType{55, 59};
-constexpr Field kFrom{60, 64};
-constexpr Field kTo{65, 69};
-constexpr Field kRecordLength{75, 79};
+constexpr Field kTable{15, 34};         ///< Table name.
+constexpr Field kName{35, 54};          ///< Column name.
+constexpr Field kType{55, 59};          ///< Column type (`N1` or `S1`).
+constexpr Field kFrom{60, 64};          ///< First character of the column in a data row.
+constexpr Field kTo{65, 69};            ///< Last character of the column.
+constexpr Field kRecordLength{75, 79};  ///< Length of a full data row.
 
+/// @brief Cuts one field out of a SYSTEM_TABLE line.
+/// @param line The line.
+/// @param field Where the field is.
+/// @return The field's text without surrounding spaces; empty if the line is too short.
 std::string_view cut(std::string_view line, Field field)
 {
     if (field.from >= line.size()) {
@@ -30,6 +39,12 @@ std::string_view cut(std::string_view line, Field field)
     return trim(line.substr(field.from, field.to - field.from + 1));
 }
 
+/// @brief Reads one numeric field of a SYSTEM_TABLE line.
+/// @param line The line.
+/// @param field Where the field is.
+/// @param lineNumber The line's number in the file, for the error message.
+/// @return The number.
+/// @throws SqlError If the field is not a non-negative integer.
 std::size_t number(std::string_view line, Field field, std::size_t lineNumber)
 {
     auto value = parseInteger(cut(line, field));

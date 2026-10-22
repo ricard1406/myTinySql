@@ -1,3 +1,6 @@
+/// @file Statement.hpp
+/// @brief The parsed form of every statement, and the functions that build it from text.
+
 #pragma once
 
 #include <cstddef>
@@ -9,71 +12,86 @@
 
 namespace tinysql {
 
-/// One entry of a SELECT list: `*`, a column name, or a 'quoted literal' printed on every row.
+/// @brief One entry of a SELECT list: `*`, a column name, or a `'quoted literal'` printed on every row.
 struct SelectItem {
-    enum class Kind { Star, Column, Literal };
-    Kind kind;
-    std::string text;
+    /// @brief Which kind of entry this is.
+    enum class Kind {
+        Star,     ///< `*`: every column of the table.
+        Column,   ///< A column name.
+        Literal,  ///< A `'quoted text'`, printed as-is on every row.
+    };
+    Kind kind;         ///< Which kind of entry this is.
+    std::string text;  ///< The column name or the literal text (`*` for Kind::Star).
 };
 
-/// WHERE <column> <op> <value>, with op one of = != <> < <= > >=
+/// @brief A `WHERE <column> <op> <value>` test.
 struct Condition {
-    std::string column;
-    std::string op;
-    std::string value;
+    std::string column;  ///< The column to test.
+    std::string op;      ///< One of `=` `!=` `<>` `<` `<=` `>` `>=`.
+    std::string value;   ///< The value to compare with; compared as a number when both sides are integers.
 };
 
+/// @brief `SELECT <items> FROM <table> [WHERE <condition>]`.
 struct SelectStmt {
-    std::vector<SelectItem> items;
-    std::string table;
-    std::optional<Condition> where;
+    std::vector<SelectItem> items;   ///< What to show, in order.
+    std::string table;               ///< The table to read.
+    std::optional<Condition> where;  ///< The optional WHERE test.
 };
 
+/// @brief `INSERT INTO <table> VALUES (<values>)`.
 struct InsertStmt {
-    std::string table;
-    std::vector<std::string> values;
+    std::string table;                ///< The table to add a row to.
+    std::vector<std::string> values;  ///< The values, without the ID when it is assigned automatically.
 };
 
-/// DELETE FROM <table> WHERE <condition>. The WHERE is required, so a table is never emptied by accident.
+/// @brief `DELETE FROM <table> WHERE <condition>`. The WHERE is required, so a table is never emptied by accident.
 struct DeleteStmt {
-    std::string table;
-    Condition where;
+    std::string table;  ///< The table to remove rows from.
+    Condition where;    ///< Which rows to remove.
 };
 
-/// One `<column> = <value>` of an UPDATE's SET list.
+/// @brief One `<column> = <value>` of an UPDATE's SET list.
 struct Assignment {
-    std::string column;
-    std::string value;
+    std::string column;  ///< The column to change.
+    std::string value;   ///< Its new value.
 };
 
-/// UPDATE <table> SET <col> = <value>[, ...] WHERE <condition>. The WHERE is required, as for DELETE.
+/// @brief `UPDATE <table> SET <col> = <value>[, ...] WHERE <condition>`. The WHERE is required, as for DELETE.
 struct UpdateStmt {
-    std::string table;
-    std::vector<Assignment> assignments;
-    Condition where;
+    std::string table;                    ///< The table to change.
+    std::vector<Assignment> assignments;  ///< The columns to set and their new values.
+    Condition where;                      ///< Which rows to change.
 };
 
-/// COLUMN <name> FORMAT A<width>
+/// @brief `COLUMN <name> FORMAT A<width>`: the console display width of a column.
 struct ColumnFormatStmt {
-    std::string column;
-    std::size_t width;
+    std::string column;  ///< The column name.
+    std::size_t width;   ///< Display width in characters.
 };
 
-/// DESCRIBE lists the tables; DESCRIBE <table> lists its columns.
+/// @brief `DESCRIBE` lists the tables; `DESCRIBE <table>` lists that table's columns.
 struct DescribeStmt {
-    std::optional<std::string> table;
+    std::optional<std::string> table;  ///< The table to describe, or empty to list all tables.
 };
 
-/// REM ..., -- ..., or an empty line.
+/// @brief `REM ...`, `-- ...`, or an empty line: nothing to run.
 struct CommentStmt {};
 
+/// @brief Any parsed statement: exactly one of the statement types above.
+///
+/// Session::execute() uses `std::visit` to call the matching `run()` overload.
 using Statement =
     std::variant<SelectStmt, InsertStmt, UpdateStmt, DeleteStmt, ColumnFormatStmt, DescribeStmt, CommentStmt>;
 
-/// Parses one statement. Throws SqlError on a syntax error.
+/// @brief Parses one statement.
+/// @param sql The text of one statement; a trailing `;` is allowed.
+/// @return The parsed statement.
+/// @throws SqlError On a syntax error; the message says what was expected and what was found.
 Statement parseStatement(std::string_view sql);
 
-/// Splits a script into statements: one per line, and `;` outside quotes also ends one.
+/// @brief Splits a script into statements.
+/// @param script Any number of statements: one per line, and `;` outside quotes also ends one.
+/// @return The statements in order, trimmed; comment lines and empty pieces are left out.
 std::vector<std::string> splitStatements(std::string_view script);
 
 }  // namespace tinysql

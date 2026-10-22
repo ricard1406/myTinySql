@@ -1,3 +1,6 @@
+/// @file Session.cpp
+/// @brief Implementation of Session: running each kind of statement.
+
 #include "Session.hpp"
 
 #include <algorithm>
@@ -12,7 +15,11 @@ namespace tinysql {
 
 namespace {
 
-/// Compares as numbers when both sides are integers, otherwise as (case-sensitive) text.
+/// @brief Applies a WHERE test to one value.
+/// @param fieldValue The row's value in the tested column.
+/// @param condition The test.
+/// @return True if the value passes. Numbers compare as numbers when both sides are integers,
+///         otherwise as case-sensitive text.
 bool matches(std::string_view fieldValue, const Condition& condition)
 {
     std::strong_ordering order = std::strong_ordering::equal;
@@ -33,7 +40,10 @@ bool matches(std::string_view fieldValue, const Condition& condition)
     return order >= 0;  // ">="
 }
 
-/// Builds a result whose column widths fit the headers and the values.
+/// @brief Builds a result whose column widths fit the headers and the values (used by DESCRIBE).
+/// @param headers The column titles.
+/// @param rows The values, one inner vector per row.
+/// @return The result set.
 ResultSet fitted(std::vector<std::string> headers, std::vector<std::vector<std::string>> rows)
 {
     ResultSet result;
@@ -51,6 +61,10 @@ ResultSet fitted(std::vector<std::string> headers, std::vector<std::vector<std::
     return result;
 }
 
+/// @brief Writes a count with a noun in singular or plural.
+/// @param n The count.
+/// @param word The noun in singular, e.g. "row".
+/// @return E.g. "1 row" or "3 rows".
 std::string plural(std::size_t n, std::string_view word)
 {
     return std::format("{} {}{}", n, word, n == 1 ? "" : "s");

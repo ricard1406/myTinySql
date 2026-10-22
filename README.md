@@ -5,6 +5,7 @@ A tiny SQL interpreter over fixed-width text files, written in C++20 as a learni
 ```bash
 make                                        # builds ./myTinySql (needs g++ 13 or newer)
 make test                                   # runs tests/*.sql and compares with tests/*.expected
+make doxygen                                # HTML docs of the code in build/doxygen/html/ (needs doxygen)
 ./myTinySql --sqlfile=examples/select.sql   # run a script
 ./myTinySql                                 # type statements interactively
 ./myTinySql --http                          # browser UI on http://localhost:8080 (show / add / edit / delete rows)

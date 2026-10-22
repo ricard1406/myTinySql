@@ -1,0 +1,32 @@
+# Doxygen settings for myTinySQL. Run `make doxygen`, then open build/doxygen/html/index.html.
+# Only the settings that differ from Doxygen's defaults are listed; see `doxygen -g` for all of them.
+
+PROJECT_NAME           = myTinySQL
+PROJECT_BRIEF          = "A tiny SQL interpreter over fixed-width text files"
+# Set by `make doxygen` from the latest git tag, e.g. v0.1.0-3-g373edff.
+PROJECT_NUMBER         = $(PROJECT_NUMBER)
+
+OUTPUT_DIRECTORY       = build/doxygen
+INPUT                  = README.md include src
+FILE_PATTERNS          = *.hpp *.cpp
+USE_MDFILE_AS_MAINPAGE = README.md
+
+# Document everything, private members and file-local helpers included: this is a study project.
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_ANON_NSPACES   = YES
+EXTRACT_LOCAL_CLASSES  = YES
+
+# Show the source code next to the documentation, with links between them.
+SOURCE_BROWSER         = YES
+
+# Report anything left undocumented, and every parameter without @param.
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+# Graphviz (`dot`) is not installed; set to YES after `sudo apt install graphviz` for include diagrams.
+HAVE_DOT               = NO

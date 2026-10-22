@@ -1,3 +1,6 @@
+/// @file Util.cpp
+/// @brief Implementation of the string helpers declared in Util.hpp.
+
 #include "Util.hpp"
 
 #include <algorithm>
@@ -7,8 +10,17 @@
 namespace tinysql {
 
 namespace {
+
+/// @brief Tells whether a character is whitespace for trimming.
+/// @param c The character.
+/// @return True for space, tab, carriage return and line feed.
 bool isSpace(char c) { return c == ' ' || c == '\t' || c == '\r' || c == '\n'; }
+
+/// @brief Upper-cases one ASCII character.
+/// @param c The character, as `unsigned char` so that `std::toupper` is safe for any byte.
+/// @return The upper-case character.
 char upper(unsigned char c) { return static_cast<char>(std::toupper(c)); }
+
 }  // namespace
 
 std::string_view trimRight(std::string_view text)

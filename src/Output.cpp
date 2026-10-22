@@ -1,3 +1,6 @@
+/// @file Output.cpp
+/// @brief Console text and the HTML page with its testing tools.
+
 #include "Output.hpp"
 
 #include <algorithm>
@@ -9,6 +12,11 @@ namespace tinysql {
 
 namespace {
 
+/// @brief Cuts or pads text to an exact width.
+/// @param text The text.
+/// @param width The width wanted.
+/// @param filler The character used for padding (space for values, dash for headers).
+/// @return Exactly `width` characters.
 std::string fit(std::string_view text, std::size_t width, char filler)
 {
     std::string result(text.substr(0, width));
@@ -16,6 +24,10 @@ std::string fit(std::string_view text, std::size_t width, char filler)
     return result;
 }
 
+/// @brief Builds the dashed header line of a console table, e.g. `ID-------- NOME----`.
+/// @param table The result set.
+/// @param separator Text between two columns.
+/// @return The header line.
 std::string headerLine(const ResultSet& table, std::string_view separator)
 {
     std::string line;
@@ -28,6 +40,9 @@ std::string headerLine(const ResultSet& table, std::string_view separator)
     return line;
 }
 
+/// @brief Escapes text for use inside HTML.
+/// @param text Any text.
+/// @return The text with `&`, `<`, `>` and `"` replaced by HTML entities.
 std::string escapeHtml(std::string_view text)
 {
     std::string result;
@@ -44,6 +59,7 @@ std::string escapeHtml(std::string_view text)
     return result;
 }
 
+/// @brief The CSS of the HTML page.
 constexpr std::string_view kPageStyle = R"(
 body { font-family: system-ui, sans-serif; margin: 2rem; color: #222; }
 textarea { width: 100%; max-width: 60rem; font-family: monospace; }
@@ -62,7 +78,9 @@ tr.editing td { background: #fffbe6; }
 tr.editing input { font-family: monospace; }
 )";
 
-// The buttons only write SQL into the box and submit it, so every action is a statement you can read.
+/// @brief The JavaScript of the HTML page.
+///
+/// The buttons only write SQL into the box and submit it, so every action is a statement you can read.
 constexpr std::string_view kPageScript = R"(<script>
 const form = document.getElementById('sql');
 const tableSelect = document.getElementById('table');
@@ -130,9 +148,13 @@ for (const f of document.querySelectorAll('form.add-row')) {
 </script>
 )";
 
+/// @brief The query shown in the box on a first visit.
 constexpr std::string_view kExampleQuery = "SELECT * FROM EMPLOY WHERE ID <= 5";
 
-/// The table the tools should start on: the last one a statement used, else EMPLOY, else the first.
+/// @brief Chooses the table the page's tools start on.
+/// @param results The results being shown.
+/// @param tables All tables.
+/// @return The table the last statement used; else EMPLOY if it exists; else the first table.
 std::string selectedTable(const std::vector<StatementResult>& results, const std::vector<TableSchema>& tables)
 {
     for (auto it = results.rbegin(); it != results.rend(); ++it) {

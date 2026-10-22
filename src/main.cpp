@@ -1,8 +1,9 @@
-// myTinySQL - a tiny SQL interpreter over fixed-width text files.
-//
-//   ./myTinySql --sqlfile=examples/select.sql   run a script
-//   ./myTinySql                                 type statements (or pipe them in)
-//   ./myTinySql --http                          browser UI on http://localhost:8080
+/// @file main.cpp
+/// @brief The command-line entry point: options, script mode, interactive mode, server mode.
+///
+///     ./myTinySql --sqlfile=examples/select.sql   run a script
+///     ./myTinySql                                 type statements (or pipe them in)
+///     ./myTinySql --http                          browser page on http://localhost:8080
 
 #include <unistd.h>
 
@@ -25,6 +26,7 @@ namespace {
 
 using namespace tinysql;
 
+/// @brief The text printed by `--help` and after a wrong option.
 constexpr std::string_view kUsage = R"(Usage: myTinySql [options]
 
   --sqlfile=FILE   run the statements in FILE ('-' for standard input)
@@ -38,14 +40,18 @@ constexpr std::string_view kUsage = R"(Usage: myTinySql [options]
 With no --sqlfile and no --http, statements are read from standard input.
 )";
 
+/// @brief The command-line options, after parsing.
 struct Options {
-    std::optional<std::string> sqlFile;
-    bool http = false;
-    std::optional<std::uint16_t> port;
-    std::optional<std::vector<std::string>> allow;
-    std::filesystem::path dataDir = "data";
+    std::optional<std::string> sqlFile;             ///< `--sqlfile`: the script to run (`-` for standard input).
+    bool http = false;                              ///< `--http`: start the browser server.
+    std::optional<std::uint16_t> port;              ///< `--port`: the server port, if not the default.
+    std::optional<std::vector<std::string>> allow;  ///< `--allow`: client IP prefixes, if given.
+    std::filesystem::path dataDir = "data";         ///< `--data`: the directory holding the tables.
 };
 
+/// @brief Splits a comma-separated list.
+/// @param text E.g. "127.,192.168.".
+/// @return The non-empty items.
 std::vector<std::string> splitList(std::string_view text)
 {
     std::vector<std::string> items;
@@ -59,7 +65,11 @@ std::vector<std::string> splitList(std::string_view text)
     return items;
 }
 
-/// Parses the command line; throws std::invalid_argument with a message on bad input.
+/// @brief Parses the command line. Options take their value as `--name=value` or `--name value`.
+/// @param argc Number of arguments, as given to main().
+/// @param argv The arguments, as given to main().
+/// @return The options.
+/// @throws std::invalid_argument On an unknown option, a missing or bad value, or `--sqlfile` together with `--http`.
 Options parseOptions(int argc, char** argv)
 {
     Options options;
@@ -110,6 +120,10 @@ Options parseOptions(int argc, char** argv)
     return options;
 }
 
+/// @brief Runs a whole script and prints every result.
+/// @param session The session to run it in.
+/// @param in Where to read the script from (a file or standard input).
+/// @return The exit code: 0 if every statement succeeded, 1 otherwise.
 int runScript(Session& session, std::istream& in)
 {
     std::stringstream script;
@@ -124,6 +138,9 @@ int runScript(Session& session, std::istream& in)
     return exitCode;
 }
 
+/// @brief Reads statements at a `tinysql>` prompt until end of input (Ctrl+D).
+/// @param session The session to run them in.
+/// @return The exit code, always 0.
 int runInteractive(Session& session)
 {
     std::string line;
@@ -138,6 +155,11 @@ int runInteractive(Session& session)
 
 }  // namespace
 
+/// @brief Program entry point.
+/// @param argc Number of command-line arguments.
+/// @param argv The command-line arguments.
+/// @return 0 on success; 1 if a script statement failed or an error occurred; 2 for a usage error
+///         or a missing file or data directory.
 int main(int argc, char** argv)
 {
     try {

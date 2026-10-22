@@ -1,14 +1,17 @@
-// Tokenizer and recursive-descent parser for the tiny SQL dialect.
-//
-//   SELECT <item>[,<item>...] FROM <table> [WHERE <col> <op> <value>]
-//   INSERT INTO <table> VALUES (<value>[,<value>...])
-//   UPDATE <table> SET <col> = <value>[,<col> = <value>...] WHERE <col> <op> <value>
-//   DELETE FROM <table> WHERE <col> <op> <value>
-//   COLUMN <col> FORMAT A<width>
-//   DESCRIBE [<table>]
-//   REM <comment>    -- <comment>
-//
-// Keywords are case-insensitive. A trailing ';' or '@' is ignored.
+/// @file Parser.cpp
+/// @brief The tokenizer and recursive-descent parser for the SQL dialect.
+///
+/// The grammar:
+///
+///     SELECT <item>[,<item>...] FROM <table> [WHERE <col> <op> <value>]
+///     INSERT INTO <table> VALUES (<value>[,<value>...])
+///     UPDATE <table> SET <col> = <value>[,<col> = <value>...] WHERE <col> <op> <value>
+///     DELETE FROM <table> WHERE <col> <op> <value>
+///     COLUMN <col> FORMAT A<width>
+///     DESCRIBE [<table>]
+///     REM <comment>    -- <comment>
+///
+/// Keywords are case-insensitive. A trailing `;` or `@` is ignored.
 
 #include <format>
 #include <string_view>
@@ -21,15 +24,27 @@ namespace tinysql {
 
 namespace {
 
-enum class TokenKind { Word, String, Symbol, End };
-
-struct Token {
-    TokenKind kind;
-    std::string text;
+/// @brief The kinds of token the tokenizer produces.
+enum class TokenKind {
+    Word,    ///< A keyword, name or bare value, e.g. `SELECT`, `EMPLOY`, `Torino`, `42`.
+    String,  ///< A `'quoted string'`, without its quotes.
+    Symbol,  ///< Punctuation or an operator: `( ) , * ; @ = != <> < <= > >=`.
+    End,     ///< The end of the statement.
 };
 
+/// @brief One token of a statement.
+struct Token {
+    TokenKind kind;    ///< What kind of token this is.
+    std::string text;  ///< Its text.
+};
+
+/// @brief The characters that end a word.
 constexpr std::string_view kDelimiters = " \t\r\n(),*;@=<>!'";
 
+/// @brief Splits a statement into tokens.
+/// @param sql The statement.
+/// @return The tokens, always ending with one TokenKind::End.
+/// @throws SqlError On an unterminated quoted string or a lone `!`.
 std::vector<Token> tokenize(std::string_view sql)
 {
     std::vector<Token> tokens;
@@ -83,6 +98,9 @@ std::vector<Token> tokenize(std::string_view sql)
     return tokens;
 }
 
+/// @brief Describes a token for an error message.
+/// @param token The token.
+/// @return E.g. `"FROM"`, `'text'`, or "end of statement".
 std::string describe(const Token& token)
 {
     switch (token.kind) {
@@ -95,15 +113,24 @@ std::string describe(const Token& token)
     }
 }
 
+/// @brief Tells whether a symbol is a comparison operator.
+/// @param op The symbol.
+/// @return True for `=` `!=` `<>` `<` `<=` `>` `>=`.
 bool isComparison(std::string_view op)
 {
     return op == "=" || op == "!=" || op == "<>" || op == "<" || op == "<=" || op == ">" || op == ">=";
 }
 
+/// @brief A recursive-descent parser: one method per statement type, reading the tokens left to right.
 class Parser {
 public:
+    /// @brief Prepares to parse a statement.
+    /// @param tokens The statement's tokens, from tokenize().
     explicit Parser(std::vector<Token> tokens) : tokens_(std::move(tokens)) {}
 
+    /// @brief Parses the whole statement, choosing the method from its first word.
+    /// @return The parsed statement.
+    /// @throws SqlError On an unknown command or a syntax error.
     Statement parse()
     {
         const std::string keyword = toUpper(peek().text);
@@ -120,17 +147,29 @@ public:
     }
 
 private:
+    /// @brief The tokens, ending with TokenKind::End.
     std::vector<Token> tokens_;
+    /// @brief The position of the next token to read.
     std::size_t pos_ = 0;
 
+    /// @brief Looks at the next token without consuming it.
+    /// @return The next token.
     const Token& peek() const { return tokens_[pos_]; }
+    /// @brief Consumes the next token (the End token is never consumed).
+    /// @return The token.
     Token next() { return peek().kind == TokenKind::End ? peek() : tokens_[pos_++]; }
 
+    /// @brief Reports a syntax error at the current token.
+    /// @param expected What should have come, e.g. "a table name".
+    /// @throws SqlError Always: "expected ... but found ...".
     [[noreturn]] void fail(std::string_view expected) const
     {
         throw SqlError(std::format("expected {} but found {}", expected, describe(peek())));
     }
 
+    /// @brief Consumes the next token if it is a given keyword.
+    /// @param keyword The keyword (case-insensitive).
+    /// @return True if it was there and was consumed.
     bool acceptKeyword(std::string_view keyword)
     {
         if (peek().kind == TokenKind::Word && equalsIgnoreCase(peek().text, keyword)) {
@@ -140,6 +179,9 @@ private:
         return false;
     }
 
+    /// @brief Consumes a keyword that must come next.
+    /// @param keyword The keyword (case-insensitive).
+    /// @throws SqlError If the next token is something else.
     void expectKeyword(std::string_view keyword)
     {
         if (!acceptKeyword(keyword)) {
@@ -147,6 +189,9 @@ private:
         }
     }
 
+    /// @brief Consumes the next token if it is a given symbol.
+    /// @param symbol The symbol, e.g. ",".
+    /// @return True if it was there and was consumed.
     bool acceptSymbol(std::string_view symbol)
     {
         if (peek().kind == TokenKind::Symbol && peek().text == symbol) {
@@ -156,6 +201,9 @@ private:
         return false;
     }
 
+    /// @brief Consumes a symbol that must come next.
+    /// @param symbol The symbol, e.g. "(".
+    /// @throws SqlError If the next token is something else.
     void expectSymbol(std::string_view symbol)
     {
         if (!acceptSymbol(symbol)) {
@@ -163,6 +211,10 @@ private:
         }
     }
 
+    /// @brief Consumes a word (a name) that must come next.
+    /// @param what What the word is, for the error message, e.g. "a column name".
+    /// @return The word.
+    /// @throws SqlError If the next token is not a word.
     std::string expectWord(std::string_view what)
     {
         if (peek().kind != TokenKind::Word) {
@@ -171,6 +223,9 @@ private:
         return next().text;
     }
 
+    /// @brief Consumes a value that must come next: a word or a quoted string.
+    /// @return The value's text.
+    /// @throws SqlError If the next token is neither.
     std::string expectValue()
     {
         if (peek().kind != TokenKind::Word && peek().kind != TokenKind::String) {
@@ -179,6 +234,8 @@ private:
         return next().text;
     }
 
+    /// @brief Checks that the statement ends here, after any trailing `;` or `@`.
+    /// @throws SqlError If more tokens follow.
     void expectEnd()
     {
         while (acceptSymbol(";") || acceptSymbol("@")) {
@@ -188,7 +245,9 @@ private:
         }
     }
 
-    /// <column> <op> <value>, after the WHERE keyword.
+    /// @brief Parses `<column> <op> <value>`, after the WHERE keyword.
+    /// @return The condition.
+    /// @throws SqlError On a syntax error.
     Condition parseCondition()
     {
         Condition condition;
@@ -201,6 +260,9 @@ private:
         return condition;
     }
 
+    /// @brief Parses `SELECT <items> FROM <table> [WHERE ...]`.
+    /// @return The SelectStmt.
+    /// @throws SqlError On a syntax error.
     SelectStmt parseSelect()
     {
         expectKeyword("SELECT");
@@ -226,6 +288,9 @@ private:
         return stmt;
     }
 
+    /// @brief Parses `INSERT INTO <table> VALUES (...)`. A value is a quoted string, or one or more bare words joined by spaces.
+    /// @return The InsertStmt.
+    /// @throws SqlError On a syntax error.
     InsertStmt parseInsert()
     {
         expectKeyword("INSERT");
@@ -254,6 +319,9 @@ private:
         return stmt;
     }
 
+    /// @brief Parses `UPDATE <table> SET <col> = <value>, ... WHERE ...`.
+    /// @return The UpdateStmt.
+    /// @throws SqlError On a syntax error.
     UpdateStmt parseUpdate()
     {
         expectKeyword("UPDATE");
@@ -279,6 +347,9 @@ private:
         return stmt;
     }
 
+    /// @brief Parses `DELETE FROM <table> WHERE ...`.
+    /// @return The DeleteStmt.
+    /// @throws SqlError On a syntax error.
     DeleteStmt parseDelete()
     {
         expectKeyword("DELETE");
@@ -293,6 +364,9 @@ private:
         return stmt;
     }
 
+    /// @brief Parses `COLUMN <col> FORMAT A<width>`.
+    /// @return The ColumnFormatStmt.
+    /// @throws SqlError On a syntax error.
     ColumnFormatStmt parseColumn()
     {
         expectKeyword("COLUMN");
@@ -309,6 +383,9 @@ private:
         return stmt;
     }
 
+    /// @brief Parses `DESCRIBE [<table>]`.
+    /// @return The DescribeStmt.
+    /// @throws SqlError On a syntax error.
     DescribeStmt parseDescribe()
     {
         expectKeyword("DESCRIBE");
@@ -321,6 +398,9 @@ private:
     }
 };
 
+/// @brief Tells whether a line is a comment or empty.
+/// @param sql The line.
+/// @return True for an empty line, `-- ...`, or `REM ...`.
 bool isComment(std::string_view sql)
 {
     sql = trim(sql);

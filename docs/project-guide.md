@@ -158,12 +158,15 @@ git clone https://github.com/ricard1406/myTinySql.git
 cd ~/Projects/myTinySQL
 make          # builds ./myTinySql; object files go to build/
 make test     # runs the 6 test scripts on a copy of tests/data/
+make doxygen  # HTML documentation of the code, from its Doxygen comments
 make clean    # removes build/ and the binary
 ```
 
 The Makefile compiles every `src/*.cpp` with `-std=c++20 -Wall -Wextra -Wpedantic -O2 -pthread`, looking for headers in `include/` (`-Iinclude`). The build has no warnings. It tracks header dependencies (`-MMD`), so editing a `.hpp` file rebuilds every file that includes it.
 
 **Tests:** each `tests/NAME.sql` runs on a fresh copy of `tests/data/`, a frozen set of the tables (so your own changes to `data/` don't affect the tests), and its output must match `tests/NAME.expected` exactly. If you change the output on purpose, run `tests/run_tests.sh --update` and check the diff of the `.expected` files.
+
+**Code documentation:** every function, method and declaration has a Doxygen comment (`/// @brief`, `@param`, `@return`, `@throws`). `make doxygen` turns them into HTML pages in `build/doxygen/html/`; open `index.html` in a browser. The settings are in `Doxyfile`, and Doxygen reports any declaration left undocumented (there are none today).
 
 Tables are read from `data/`, relative to the current directory. Use `--data=DIR` to point somewhere else.
 

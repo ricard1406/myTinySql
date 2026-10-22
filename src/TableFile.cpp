@@ -1,3 +1,6 @@
+/// @file TableFile.cpp
+/// @brief Implementation of TableFile: reading rows and writing them back safely.
+
 #include "TableFile.hpp"
 
 #include <algorithm>
@@ -10,6 +13,10 @@ namespace tinysql {
 
 namespace {
 
+/// @brief Checks that a value fits in its column.
+/// @param column The column.
+/// @param value The value to store.
+/// @throws SqlError If the value is longer than the column width.
 void checkFits(const Column& column, const std::string& value)
 {
     if (value.size() > column.width()) {
@@ -18,7 +25,11 @@ void checkFits(const Column& column, const std::string& value)
     }
 }
 
-/// Writes `value` into its column's characters of `record`, padded with spaces to the column width.
+/// @brief Writes a value into its column's characters of a row, padded with spaces to the column width.
+/// @param record The row being built or edited; it must be at least as long as the row length.
+/// @param column Where the value goes.
+/// @param value The value.
+/// @throws SqlError If the value is longer than the column width.
 void place(std::string& record, const Column& column, const std::string& value)
 {
     checkFits(column, value);

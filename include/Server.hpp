@@ -1,3 +1,6 @@
+/// @file Server.hpp
+/// @brief The small HTTP server behind `--http`.
+
 #pragma once
 
 #include <cstdint>
@@ -9,20 +12,28 @@
 
 namespace tinysql {
 
-/// The browser server: GET /?subject=<url-encoded SQL> answers an HTML page with the results.
+/// @brief Settings of the browser server, which answers `GET /?subject=<url-encoded SQL>` with an HTML page.
 struct ServerConfig {
-    std::uint16_t port = 8080;
-    std::filesystem::path dataDir;
-    std::vector<std::string> allowedClients;  // IP prefixes such as "192.168."; empty = everyone
+    std::uint16_t port = 8080;                ///< TCP port to listen on.
+    std::filesystem::path dataDir;            ///< The directory holding the tables.
+    std::vector<std::string> allowedClients;  ///< IP prefixes such as `192.168.`; empty means everyone.
 };
 
-/// Serves connections until the process is stopped: each in its own thread, SQL one request at a time.
+/// @brief Serves connections until the process is stopped.
+///
+/// Each connection is served in its own thread; the SQL itself runs one request at a time.
+/// @param config The server settings.
+/// @throws std::system_error If the port cannot be opened (for example, it is already in use).
 void runServer(const ServerConfig& config);
 
-/// Decodes %XX escapes and '+' (space) from a URL.
+/// @brief Decodes a URL-encoded string.
+/// @param text Text with `%XX` escapes and `+` for spaces.
+/// @return The decoded text.
 std::string urlDecode(std::string_view text);
 
-/// The SQL in the `subject` parameter of an HTTP request, or std::nullopt if there is none.
+/// @brief Extracts the SQL from an HTTP request.
+/// @param request The raw request, starting with its request line.
+/// @return The decoded `subject` parameter, or `std::nullopt` if the request is not a GET or has none.
 std::optional<std::string> sqlFromRequest(std::string_view request);
 
 }  // namespace tinysql
