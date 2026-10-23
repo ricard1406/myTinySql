@@ -4,6 +4,8 @@ A tiny SQL interpreter over fixed-width text files, written in C++20 as a learni
 
 Code documentation (Doxygen): https://ricard1406.github.io/myTinySql/
 
+**Installation:** requirements, build and first run are in [INSTALLATION.md](INSTALLATION.md).
+
 > **DISCLAIMER: All data in this project is sample data, for testing purposes only.
 > The companies, addresses and other values are fictional or AI generated. Many names in the
 > `EMPLOY` table are those of historical Italian composers, used only as sample values;
