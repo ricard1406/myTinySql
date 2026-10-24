@@ -23,6 +23,31 @@ command and expected result in this file was run before it was written down.
 | 11 | By hand, in a browser | checklist | as described | The web page works for a person |
 | 12 | On GitHub | Actions tab | green check | The online documentation is up to date |
 
+## How to read this guide
+
+Each check has two kinds of grey boxes:
+
+- **Commands**: copy them into the terminal and press Enter.
+- **Output**: every output box comes right after the words "**You should see**". It shows what the
+  commands print. Don't type it: compare it with what your terminal shows. For example, a box containing
+  only `0` means the command must print `0`.
+
+## What you need
+
+The build tools from [INSTALLATION.md](INSTALLATION.md), plus the tools some checks use. On Ubuntu:
+
+```bash
+sudo apt install curl git doxygen
+```
+
+| Tool | Used by | Note |
+| --- | --- | --- |
+| `curl` | checks 4, 5, 6 | Sends requests to the server from the terminal; not installed on a fresh Ubuntu |
+| `git` | check 10 | Downloads a fresh copy of the project |
+| `doxygen` | check 9 | Only for the documentation check |
+| `gh` (GitHub CLI) | check 12 | Optional: the Actions tab on github.com shows the same thing |
+| A web browser | check 11 | E.g. Chromium or Firefox |
+
 ## Before you start: work on a copy
 
 Checks 3 to 8 change tables (they insert, update and delete rows). So that your real tables in `data/`
@@ -47,13 +72,13 @@ to the background too.
 make clean && make
 ```
 
-**Expected:** the compile commands, and no line containing `warning`. To count them:
+**You should see** the compile commands, and no line containing `warning`. To count those lines, run:
 
 ```bash
 make clean && make 2>&1 | grep -c warning
 ```
 
-```
+```text
 0
 ```
 
@@ -66,9 +91,9 @@ point at real bugs (an unused result, a wrong type, a missing case), so the proj
 make test
 ```
 
-**Expected:**
+**You should see** (output, don't type it):
 
-```
+```text
 tests/run_tests.sh
 PASS delete
 PASS describe
@@ -102,9 +127,9 @@ A search with `LIKE`:
 echo "SELECT ID,NOME,COGNOME FROM EMPLOY WHERE NOME LIKE '%fran%'" | ./myTinySql --data="$TEST_DIR/data" --sqlfile=-
 ```
 
-**Expected** (the first lines):
+**You should see** (the first lines; output, don't type it):
 
-```
+```text
 > SELECT ID,NOME,COGNOME FROM EMPLOY WHERE NOME LIKE '%fran%'
 ID-------- NOME------------------------------------ COGNOME---------------------------------
 11         Francesco                                Cavalli
@@ -119,9 +144,9 @@ echo "SELECT FOO FROM EMPLOY" | ./myTinySql --data="$TEST_DIR/data" --sqlfile=-
 echo "exit code: $?"
 ```
 
-**Expected:**
+**You should see** (output, don't type it):
 
-```
+```text
 > SELECT FOO FROM EMPLOY
 ERROR: unknown column 'FOO' in table EMPLOY
 
@@ -141,6 +166,10 @@ SERVER=$!
 sleep 1
 ```
 
+The terminal prints a line like `[1] 12345`: that is the background job's number and process ID, and it
+is normal. When you stop the server at the end of check 6, it prints a line like `[1]+  Terminated` (in
+Italian, `Terminato`): also normal.
+
 Ask it for the page, a file that does not exist, a request that is not GET, and a query:
 
 ```bash
@@ -150,9 +179,9 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:18080/
 curl -s 'http://localhost:18080/?subject=DESCRIBE' | grep -o '<p>[0-9]* tables</p>'
 ```
 
-**Expected:**
+**You should see** (output, don't type it):
 
-```
+```text
 200
 404
 405
@@ -175,9 +204,9 @@ head -1 <&3
 exec 3<&-
 ```
 
-**Expected:**
+**You should see** (output, don't type it):
 
-```
+```text
 other request while idle: 0.000588s
 HTTP/1.1 200 OK
 ```
@@ -190,16 +219,20 @@ supported". This check reproduces exactly that situation; the server now gives e
 
 ## 6. Parallel writes
 
-Send 20 INSERTs at the same moment, then wait for those 20 requests:
+Send 20 INSERTs at the same moment, and wait until all 20 are answered:
 
 ```bash
-pids=()
-for i in $(seq 1 20); do
-    curl -s -o /dev/null "http://localhost:18080/?subject=INSERT+INTO+COMPANY+VALUES+('Firm+$i',Test,'Via+$i',Roma)" &
-    pids+=($!)
-done
-wait "${pids[@]}"
+(
+    for i in $(seq 1 20); do
+        curl -s -o /dev/null "http://localhost:18080/?subject=INSERT+INTO+COMPANY+VALUES+('Firm+$i',Test,'Via+$i',Roma)" &
+    done
+    wait
+)
 ```
+
+The parentheses run the loop in a *subshell*, a separate copy of the shell. That does two things: the
+terminal doesn't announce each of the 20 background requests, and `wait` waits only for those requests,
+not for the server (which never ends).
 
 Count the rows, the duplicate IDs, and the different row lengths:
 
@@ -209,9 +242,9 @@ cut -c1-10 "$TEST_DIR/data/COMPANY_DATA" | sort | uniq -d | wc -l
 LC_ALL=C awk '{print length($0)}' "$TEST_DIR/data/COMPANY_DATA" | sort -u
 ```
 
-**Expected:**
+**You should see** (output, don't type it):
 
-```
+```text
 28
 0
 250
@@ -220,8 +253,6 @@ LC_ALL=C awk '{print length($0)}' "$TEST_DIR/data/COMPANY_DATA" | sort -u
 8 original rows + 20 new ones; no ID used twice; every row exactly 250 characters long. The server reads
 requests in parallel, but runs the SQL one request at a time (a `std::mutex`), so no two INSERTs can pick
 the same ID or write into each other.
-
-Note `wait "${pids[@]}"`: a plain `wait` would also wait for the server, which never ends.
 
 Stop the test server:
 
@@ -238,9 +269,9 @@ tables, without changing them:
 for f in data/*; do echo "$(basename $f): $(LC_ALL=C awk '{print length($0)}' "$f" | sort -u | tr '\n' ' ')"; done
 ```
 
-**Expected:** one length per file.
+**You should see** one length per file (output, don't type it):
 
-```
+```text
 CAL_WEEKLY_DATA: 35
 COMPANY_DATA: 250
 EMPLOY_DATA: 290
@@ -264,9 +295,9 @@ for f in tests/*.sql; do
 done
 ```
 
-**Expected:**
+**You should see** (output, don't type it):
 
-```
+```text
 tests/delete.sql: 0 problems
 tests/describe.sql: 0 problems
 tests/errors.sql: 0 problems
@@ -283,9 +314,9 @@ The checked program is slower and bigger, so it is only for testing. It stays in
 make doxygen 2>&1 | grep -c warning
 ```
 
-**Expected:**
+**You should see** (output, don't type it):
 
-```
+```text
 0
 ```
 
@@ -306,7 +337,7 @@ make test
 cd "$PROJECT"
 ```
 
-**Expected:** `0` warnings, then the same 6 `PASS` lines as in check 2.
+**You should see** `0`, then the same 6 `PASS` lines as in check 2.
 
 **Why this check exists:** a fresh copy has no `build/` folder and nothing left over from earlier work.
 That is exactly how a bug in `make doxygen` was found: it worked on the developer's machine, where
@@ -345,7 +376,14 @@ the latest "Doxygen documentation" run must have a green check. From a terminal:
 gh run list --repo ricard1406/myTinySql --limit 1
 ```
 
-**Expected:** a line starting with `completed	success`.
+**You should see** (output, don't type it) a small table whose first row starts with a green check mark:
+
+```text
+STATUS  TITLE                     WORKFLOW               BRANCH  EVENT  ID           ELAPSED  AGE
+✓       Docs: link TESTING.md...  Doxygen documentation  main    push   40098806...  53s      about 3 minutes ago
+```
+
+A red `X` instead of the check mark means the run failed: click it in the Actions tab to see why.
 
 ## Clean up
 
@@ -373,6 +411,7 @@ rm -rf "$TEST_DIR"
 | Chromium showed "Only GET requests are supported" on every click | A browser test, then reproduced by check 5 | One thread per connection; silent connections closed without a reply |
 | The tests failed after a row was added on the web page | Check 2 | Tests use their own frozen tables in `tests/data/` |
 | `make doxygen` failed on a clean machine (GitHub) | Check 12, then check 10 | `make doxygen` creates its output folder first |
-| A plain `wait` in a test script waited forever for the server | Writing check 6 of this guide | Wait only for the 20 requests |
+| A plain `wait` in a test script waited forever for the server | Writing check 6 of this guide | Run the 20 requests in a subshell, whose `wait` ignores the server |
+| On a fresh Ubuntu: `curl` missing, and an output box (`0`) typed as a command | A user following this guide | "What you need" section; output boxes labelled "You should see" |
 
 The last one is a reminder that test scripts are code too, and need testing as well.
