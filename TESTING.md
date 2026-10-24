@@ -58,9 +58,18 @@ once, in the project folder, in the same terminal you will use for the checks:
 PROJECT=$(pwd)
 TEST_DIR=$(mktemp -d)
 cp -r tests/data "$TEST_DIR/data"
+echo "TEST_DIR is: $TEST_DIR"
 ```
 
-`PROJECT` remembers the project folder, whatever its name; `TEST_DIR` is a new, empty temporary folder.
+**You should see** (output, don't type it) a temporary folder; the letters after `tmp.` change every time:
+
+```text
+TEST_DIR is: /tmp/tmp.KDNZpJ10N7
+```
+
+`PROJECT` remembers the project folder, whatever its name; `TEST_DIR` is the temporary folder. Both exist
+only in this terminal window: **run all the checks in the same window**. If you close it or open a new
+one, run these lines again first.
 
 Run each block below as it is, one line at a time or all at once. Keep each command on its own line:
 a line ending with `&` runs in the background, and joining it to other commands with `&&` sends them all
@@ -158,13 +167,34 @@ statement ends with exit code 1, so other programs can detect it.
 
 ## 4. Browser server
 
+First make sure the copy of the tables from "Before you start" is there, in this terminal window:
+
+```bash
+test -d "$TEST_DIR/data" && echo "test copy found" || echo "TEST_DIR is empty: run the 'Before you start' lines in this window"
+```
+
+**You should see** (output, don't type it):
+
+```text
+test copy found
+```
+
 Start a test server in the background, on a spare port and on the copy of the tables:
 
 ```bash
-./myTinySql --http --port=18080 --data="$TEST_DIR/data" > /dev/null 2>&1 &
+./myTinySql --http --port=18080 --data="$TEST_DIR/data" > "$TEST_DIR/server.log" 2>&1 &
 SERVER=$!
 sleep 1
+if kill -0 $SERVER 2>/dev/null; then echo "server is running"; else echo "server did not start:"; cat "$TEST_DIR/server.log"; fi
 ```
+
+**You should see** (output, don't type it):
+
+```text
+server is running
+```
+
+If it says "server did not start", the line after it tells you why; see the note at the end of this check.
 
 The terminal prints a line like `[1] 12345`: that is the background job's number and process ID, and it
 is normal. When you stop the server at the end of check 6, it prints a line like `[1]+  Terminated` (in
@@ -189,6 +219,14 @@ curl -s 'http://localhost:18080/?subject=DESCRIBE' | grep -o '<p>[0-9]* tables</
 ```
 
 `200` means OK, `404` "not found" and `405` "method not allowed". Leave the server running for checks 5 and 6.
+
+**If `curl` prints `000`:** it could not connect, so no server is running on port 18080. Usually the server
+stopped right after starting. The most common reasons:
+
+| Message in "server did not start" | Cause | Fix |
+| --- | --- | --- |
+| `bash: /server.log: Permission denied` | `TEST_DIR` is empty: the "Before you start" lines ran in another terminal window | Run them again in this window, then restart this check |
+| `bind to port 18080: Address already in use` | Another server (perhaps from an earlier try) still uses the port | Stop it (`kill %1`, or close that terminal), then restart this check |
 
 ## 5. Idle connection ("preconnect")
 
