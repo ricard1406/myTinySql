@@ -169,6 +169,12 @@ The Makefile compiles every `src/*.cpp` with `-std=c++20 -Wall -Wextra -Wpedanti
 
 **Tests:** each `tests/NAME.sql` runs on a fresh copy of `tests/data/`, a frozen set of the tables (so your own changes to `data/` don't affect the tests), and its output must match `tests/NAME.expected` exactly. If you change the output on purpose, run `tests/run_tests.sh --update` and check the diff of the `.expected` files. `make test` is one of twelve checks in [TESTING.md](../TESTING.md), which also covers the browser server, parallel writes, memory safety and a fresh install, each with the command to run and the result to expect.
 
+Some of those checks need tools that a fresh Ubuntu does not have: `curl` (to send requests to the server from the terminal), `git` (for the fresh-install check) and `doxygen` (for the documentation check). Install them with:
+
+```bash
+sudo apt install curl git doxygen
+```
+
 **Code documentation:** every function, method and declaration has a Doxygen comment (`/// @brief`, `@param`, `@return`, `@throws`). `make doxygen` turns them into HTML pages in `build/doxygen/html/`; open `index.html` in a browser. On GitHub, the workflow in `.github/workflows/doxygen.yml` does the same after every push and publishes the pages at https://ricard1406.github.io/myTinySql/. The settings are in `Doxyfile`, and Doxygen reports any declaration left undocumented (there are none today).
 
 Tables are read from `data/`, relative to the current directory. Use `--data=DIR` to point somewhere else.
