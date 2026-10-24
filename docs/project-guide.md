@@ -47,7 +47,7 @@ The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 
 
 | Path | Content |
 | --- | --- |
-| `data/` | `SYSTEM_TABLE` (26 lines, 4 tables), `EMPLOY_DATA` (70 rows: ID, NOME, COGNOME, VIA, CITTA, GENERE), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows) |
+| `data/` | `SYSTEM_TABLE` (26 lines, 4 tables), `EMPLOY_DATA` (37 rows: ID, NOME, COGNOME, VIA, CITTA, GENERE), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows) |
 | `examples/` | `select.sql`, `describe.sql`, `insert.sql`, `company.sql`. `insert.sql` adds rows to `data/`; `company.sql` holds the rows that filled `COMPANY_DATA`. |
 | `tests/` | 6 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
@@ -228,9 +228,7 @@ Keywords and table and column names can be upper or lower case. Write one statem
 ID-------- NOME-------- COGNOME------------- CITTA---------
 5          Alfredo      Casella              Torino
 21         Felice       Giardini             Torino
-37         Alfredo      Casella              Torino
-53         Felice       Giardini             Torino
-(4 rows)
+(2 rows)
 
 > SELECT NOME,COGNOME,'lives in',CITTA FROM EMPLOY WHERE ID <= 5
 NOME-------- COGNOME------------- lives in CITTA---------
@@ -242,7 +240,7 @@ Alfredo      Casella              lives in Torino
 (5 rows)
 ```
 
-The row LUIGI ROSSI from TORINO is not in the first result, because text comparison is case-sensitive. The duplicate rows come from the data: rows 36–67 of `EMPLOY_DATA` repeat rows 4–35, probably because the 2023 INSERT script was run twice.
+The row LUIGI ROSSI from TORINO is not in the first result, because text comparison is case-sensitive. (`WHERE CITTA LIKE 'torino'` would find all three, since `LIKE` ignores case.)
 
 A mistake prints an error and the script goes on:
 
