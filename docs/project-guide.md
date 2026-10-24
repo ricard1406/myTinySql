@@ -226,21 +226,22 @@ Keywords and table and column names can be upper or lower case. Write one statem
 ```
 > SELECT ID,NOME,COGNOME,CITTA FROM EMPLOY WHERE CITTA = Torino
 ID-------- NOME-------- COGNOME------------- CITTA---------
+2          Luigi        Rossi                Torino
 5          Alfredo      Casella              Torino
 21         Felice       Giardini             Torino
-(2 rows)
+(3 rows)
 
 > SELECT NOME,COGNOME,'lives in',CITTA FROM EMPLOY WHERE ID <= 5
 NOME-------- COGNOME------------- lives in CITTA---------
-GIUSEPPE     VERDI                lives in MILANO
-LUIGI        ROSSI                lives in TORINO
-PIETRO       BIANCHI              lives in VERONA
+Giuseppe     Verdi                lives in Milano
+Luigi        Rossi                lives in Torino
+Pietro       Bianchi              lives in Verona
 Ferdinando   Carulli              lives in Napoli
 Alfredo      Casella              lives in Torino
 (5 rows)
 ```
 
-The row LUIGI ROSSI from TORINO is not in the first result, because text comparison is case-sensitive. (`WHERE CITTA LIKE 'torino'` would find all three, since `LIKE` ignores case.)
+Text comparison with `=` is case-sensitive: `WHERE CITTA = torino` finds no rows. `WHERE CITTA LIKE 'torino'` finds the same 3 rows as above, because `LIKE` ignores case.
 
 A mistake prints an error and the script goes on:
 
