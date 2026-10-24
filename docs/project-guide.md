@@ -22,7 +22,7 @@ What it supports:
 
 This guide describes the rewritten version. It was checked on 2026-10-20 by building with g++ 15.2 (no warnings) and running `make test` (6 test scripts, all passing).
 
-**On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (public since 2026-10-22). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), and the Doxygen documentation of the code is at [ricard1406.github.io/myTinySql](https://ricard1406.github.io/myTinySql/), rebuilt automatically after every push.
+**On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (public since 2026-10-22). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), and the Doxygen documentation of the code is at [ricard1406.github.io/myTinySql](https://ricard1406.github.io/myTinySql/), rebuilt automatically after every push. Two guides sit next to the code: [INSTALLATION.md](../INSTALLATION.md) (requirements, build, first run) and [TESTING.md](../TESTING.md) (twelve checks, each with its command and expected result).
 
 > **DISCLAIMER: All data in this project is sample data, for testing purposes only. The companies, addresses and other values are fictional or AI generated. Many names in the `EMPLOY` table are those of historical Italian composers, used only as sample values; the other values in those rows (such as city and period) are sample data and may not be accurate. Any other resemblance to real persons, living or dead, or actual places is purely coincidental.**
 
@@ -52,6 +52,7 @@ The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 
 | `tests/` | 6 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
 | `Makefile`, `Doxyfile`, `README.md` | Build rules, Doxygen settings and a quick start |
+| `INSTALLATION.md`, `TESTING.md` | The installation guide, and the testing guide: twelve checks with their expected results |
 | `.github/workflows/doxygen.yml` | Rebuilds the Doxygen pages on GitHub after every push |
 
 One data change from 2023: the ruler line `0123456789...` at the top of `CAL_WEEKLY_DATA` was removed, because it was printed as a row. `SYSTEM_DATA` is no longer needed, since `DESCRIBE` now reads `SYSTEM_TABLE`.
@@ -166,7 +167,7 @@ make clean    # removes build/ and the binary
 
 The Makefile compiles every `src/*.cpp` with `-std=c++20 -Wall -Wextra -Wpedantic -O2 -pthread`, looking for headers in `include/` (`-Iinclude`). The build has no warnings. It tracks header dependencies (`-MMD`), so editing a `.hpp` file rebuilds every file that includes it.
 
-**Tests:** each `tests/NAME.sql` runs on a fresh copy of `tests/data/`, a frozen set of the tables (so your own changes to `data/` don't affect the tests), and its output must match `tests/NAME.expected` exactly. If you change the output on purpose, run `tests/run_tests.sh --update` and check the diff of the `.expected` files.
+**Tests:** each `tests/NAME.sql` runs on a fresh copy of `tests/data/`, a frozen set of the tables (so your own changes to `data/` don't affect the tests), and its output must match `tests/NAME.expected` exactly. If you change the output on purpose, run `tests/run_tests.sh --update` and check the diff of the `.expected` files. `make test` is one of twelve checks in [TESTING.md](../TESTING.md), which also covers the browser server, parallel writes, memory safety and a fresh install, each with the command to run and the result to expect.
 
 **Code documentation:** every function, method and declaration has a Doxygen comment (`/// @brief`, `@param`, `@return`, `@throws`). `make doxygen` turns them into HTML pages in `build/doxygen/html/`; open `index.html` in a browser. On GitHub, the workflow in `.github/workflows/doxygen.yml` does the same after every push and publishes the pages at https://ricard1406.github.io/myTinySql/. The settings are in `Doxyfile`, and Doxygen reports any declaration left undocumented (there are none today).
 
