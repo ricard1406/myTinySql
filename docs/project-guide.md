@@ -175,6 +175,8 @@ Some of those checks need tools that a fresh Ubuntu does not have: `curl` (to se
 sudo apt install curl git doxygen
 ```
 
+Run all the checks in the **same terminal window**: they share a temporary copy of the tables, which exists only in the window where you created it. In another window the test server cannot start, and `curl` prints `000` (no connection). [TESTING.md](../TESTING.md) shows how to spot this and what to do.
+
 **Code documentation:** every function, method and declaration has a Doxygen comment (`/// @brief`, `@param`, `@return`, `@throws`). `make doxygen` turns them into HTML pages in `build/doxygen/html/`; open `index.html` in a browser. On GitHub, the workflow in `.github/workflows/doxygen.yml` does the same after every push and publishes the pages at https://ricard1406.github.io/myTinySql/. The settings are in `Doxyfile`, and Doxygen reports any declaration left undocumented (there are none today).
 
 Tables are read from `data/`, relative to the current directory. Use `--data=DIR` to point somewhere else.
