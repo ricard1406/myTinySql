@@ -67,10 +67,10 @@ table { border-collapse: collapse; margin: 0.5rem 0 1.5rem; }
 th, td { border: 1px solid #ccc; padding: 0.2rem 0.6rem; text-align: left; font-family: monospace; }
 th { background: #f2f2f2; }
 .error { color: #b00020; }
-.tools, form.add-row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin: 0 0 1rem; }
-form.add-row { padding: 0.6rem 0.8rem; background: #f7f7f7; border: 1px solid #ddd; border-radius: 6px; }
-form.add-row[hidden] { display: none; }
-form.add-row strong { width: 100%; }
+.tools, form.add-row, form.search { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin: 0 0 1rem; }
+form.add-row, form.search { padding: 0.6rem 0.8rem; background: #f7f7f7; border: 1px solid #ddd; border-radius: 6px; }
+form.add-row[hidden], form.search[hidden] { display: none; }
+form.add-row strong, form.search strong { width: 100%; }
 .hint { color: #666; font-size: 0.9em; }
 button.delete { color: #b00020; }
 td.actions { white-space: nowrap; }
@@ -88,8 +88,25 @@ const run = (sql) => { form.elements.subject.value = sql; form.submit(); };
 const quote = (value) => "'" + value.replaceAll("'", "''") + "'";
 
 tableSelect.addEventListener('change', () => {
-  for (const f of document.querySelectorAll('form.add-row')) f.hidden = f.dataset.table !== tableSelect.value;
+  for (const f of document.querySelectorAll('form[data-table]')) f.hidden = f.dataset.table !== tableSelect.value;
 });
+
+// Search: SELECT the rows whose chosen column contains the text (LIKE '%text%'); an empty text shows
+// every row. The last search is remembered for this browser tab, so it is still there after the reload.
+const remember = (key, value) => { try { sessionStorage.setItem(key, value); } catch (e) {} };
+const recall = (key) => { try { return sessionStorage.getItem(key); } catch (e) { return null; } };
+for (const f of document.querySelectorAll('form.search')) {
+  const column = f.querySelector('select'), text = f.querySelector('input');
+  const saved = JSON.parse(recall('search:' + f.dataset.table) || 'null');
+  if (saved) { column.value = saved.column; text.value = saved.text; }
+  f.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const value = text.value.trim();
+    remember('search:' + f.dataset.table, JSON.stringify({ column: column.value, text: value }));
+    run(value === '' ? `SELECT * FROM ${f.dataset.table}`
+                     : `SELECT * FROM ${f.dataset.table} WHERE ${column.value} LIKE ${quote('%' + value + '%')}`);
+  });
+}
 
 document.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-sql], button[data-action]');
@@ -221,6 +238,23 @@ std::string renderHtml(const std::vector<StatementResult>& results, const std::o
             "<button type=\"button\" data-action=\"show\">Show rows</button>\n"
             "<button type=\"button\" data-action=\"describe\">Describe</button>\n"
             "<button type=\"button\" data-sql=\"DESCRIBE\">List tables</button>\n</div>\n";
+
+    // One "search" form per table: a column, a text, and a button that runs a LIKE query.
+    // The script shows only the selected table's forms.
+    for (const TableSchema& table : tables) {
+        page += std::format("<form class=\"search\" data-table=\"{}\"{}>\n<strong>Search {}</strong>\n<select>",
+                            escapeHtml(table.name), table.name == selected ? "" : " hidden", escapeHtml(table.name));
+        // Start on the first column after the ID: searching by name is more common than by number.
+        const std::size_t firstChoice = table.hasAutoId() && table.columns.size() > 1 ? 1 : 0;
+        for (std::size_t i = 0; i < table.columns.size(); ++i) {
+            page += std::format("<option{}>{}</option>", i == firstChoice ? " selected" : "",
+                                escapeHtml(table.columns[i].name));
+        }
+        page += "</select>\n<input type=\"search\" size=\"20\" placeholder=\"text or part of it\">\n"
+                "<button type=\"submit\">Search</button> "
+                "<span class=\"hint\">ignores upper/lower case; <code>%</code> = any text, <code>_</code> = one character</span>\n"
+                "</form>\n";
+    }
 
     // One "add a row" form per table; the script shows only the selected table's form.
     for (const TableSchema& table : tables) {

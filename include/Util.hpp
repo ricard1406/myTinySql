@@ -39,6 +39,17 @@ std::string toUpper(std::string_view text);
 /// @return True if `a` and `b` are equal apart from upper/lower case.
 bool equalsIgnoreCase(std::string_view a, std::string_view b);
 
+/// @brief Matches text against an SQL `LIKE` pattern, ignoring the case of ASCII letters.
+///
+/// In the pattern, `%` stands for any text (also none) and `_` for exactly one character;
+/// every other character must match itself. For example `%fran%` matches "Francesco" and "FRANCO",
+/// and `_uigi` matches "Luigi". Characters are counted in bytes, so `_` does not match an accented
+/// letter such as `ò`, which takes 2 bytes in UTF-8; use `%` there.
+/// @param text The text to test.
+/// @param pattern The pattern.
+/// @return True if the whole text matches the whole pattern.
+bool matchesLike(std::string_view text, std::string_view pattern);
+
 /// @brief Parses a whole string as a base-10 integer.
 /// @param text The text to parse; surrounding whitespace and a leading `+` are allowed.
 /// @return The number, or `std::nullopt` if `text` is not exactly one integer.

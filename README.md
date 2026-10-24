@@ -9,7 +9,7 @@ Code documentation (Doxygen): https://ricard1406.github.io/myTinySql/
 > **DISCLAIMER: All data in this project is sample data, for testing purposes only.
 > The companies, addresses and other values are fictional or AI generated. Many names in the
 > `EMPLOY` table are those of historical Italian composers, used only as sample values;
-> the other columns of those rows are not real information about them. Any other resemblance
+> the other values in those rows (such as city and genre) are sample data and may not be accurate. Any other resemblance
 > to real persons, living or dead, or actual places is purely coincidental.**
 
 ```bash
@@ -27,7 +27,8 @@ Supported statements:
 ```sql
 SELECT ID,NOME,'lives in',CITTA FROM EMPLOY WHERE CITTA = Torino
 SELECT * FROM CAL_WEEKLY WHERE CALORIES >= 15000
-INSERT INTO EMPLOY VALUES (Mario,Rossi,Via Garibaldi,Bologna)
+SELECT * FROM EMPLOY WHERE NOME LIKE '%fran%'
+INSERT INTO EMPLOY VALUES (Mario,Rossi,Via Garibaldi,Bologna,Moderno)
 UPDATE EMPLOY SET CITTA = 'Reggio Emilia' WHERE ID = 2
 DELETE FROM EMPLOY WHERE ID = 69
 COLUMN NOME FORMAT A12

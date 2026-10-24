@@ -27,8 +27,8 @@ struct SelectItem {
 /// @brief A `WHERE <column> <op> <value>` test.
 struct Condition {
     std::string column;  ///< The column to test.
-    std::string op;      ///< One of `=` `!=` `<>` `<` `<=` `>` `>=`.
-    std::string value;   ///< The value to compare with; compared as a number when both sides are integers.
+    std::string op;      ///< One of `=` `!=` `<>` `<` `<=` `>` `>=`, or `LIKE`.
+    std::string value;   ///< The value to compare with (a number when both sides are integers), or the `LIKE` pattern.
 };
 
 /// @brief `SELECT <items> FROM <table> [WHERE <condition>]`.

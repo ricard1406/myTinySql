@@ -21,7 +21,7 @@ std::string renderText(const StatementResult& result);
 
 /// @brief Builds the full HTML page of the browser server.
 ///
-/// The page has tools for the tables (show, describe, add a row), a box to type SQL into,
+/// The page has tools for the tables (show, describe, search, add a row), a box to type SQL into,
 /// and one table per statement, with Edit and Delete buttons on each row that has an ID.
 /// @param results The results to show, in order.
 /// @param sql What the browser sent, or `std::nullopt` on a first visit (the box then starts with an example).

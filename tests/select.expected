@@ -57,3 +57,50 @@ ID-------- NAME------------------------------------ TOWN------------------------
 2          Bianchi Software                         Milano
 (1 row)
 
+> SELECT ID,NOME,COGNOME FROM EMPLOY WHERE NOME LIKE '%fran%'
+ID-------- NOME-------- COGNOME---------
+11         Francesco    Cavalli
+16         Francesco    Gasparini
+17         Francesco    Geminiani
+26         Francesco    Manelli
+27         Francesco    Manfredini
+30         Franco       Mannino
+43         Francesco    Cavalli
+48         Francesco    Gasparini
+49         Francesco    Geminiani
+58         Francesco    Manelli
+59         Francesco    Manfredini
+62         Franco       Mannino
+(12 rows)
+
+> SELECT ID,NOME FROM EMPLOY WHERE NOME like '_uigi'
+ID-------- NOME--------
+2          LUIGI
+14         Luigi
+46         Luigi
+(3 rows)
+
+> SELECT ID,CITTA FROM EMPLOY WHERE CITTA LIKE tor%
+ID-------- CITTA---------------------------------------------------------------------------
+2          TORINO
+5          Torino
+21         Torino
+37         Torino
+53         Torino
+(5 rows)
+
+> SELECT ID,COGNOME FROM EMPLOY WHERE COGNOME LIKE '%a%a%a%'
+ID-------- COGNOME---------
+9          Catalani
+10         Catalani
+41         Catalani
+42         Catalani
+(4 rows)
+
+> SELECT ID,NAME FROM COMPANY WHERE NAME LIKE '%o''b%'
+ID-------- NAME------------------------------------
+(0 rows)
+
+> SELECT ID FROM EMPLOY WHERE NOME LIKE
+ERROR: expected a value but found end of statement
+

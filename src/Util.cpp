@@ -51,6 +51,34 @@ bool equalsIgnoreCase(std::string_view a, std::string_view b)
     return std::ranges::equal(a, b, [](unsigned char x, unsigned char y) { return upper(x) == upper(y); });
 }
 
+bool matchesLike(std::string_view text, std::string_view pattern)
+{
+    constexpr std::size_t kNone = std::string_view::npos;
+    std::size_t t = 0, p = 0;
+    // Where the last `%` was, and where in the text it started matching: on a mismatch we come
+    // back there and let that `%` swallow one more character.
+    std::size_t lastPercent = kNone, resumeText = 0;
+
+    while (t < text.size()) {
+        if (p < pattern.size() && pattern[p] == '%') {
+            lastPercent = p++;
+            resumeText = t;
+        } else if (p < pattern.size() && (pattern[p] == '_' || upper(pattern[p]) == upper(text[t]))) {
+            ++p;
+            ++t;
+        } else if (lastPercent != kNone) {
+            p = lastPercent + 1;
+            t = ++resumeText;
+        } else {
+            return false;
+        }
+    }
+    while (p < pattern.size() && pattern[p] == '%') {
+        ++p;  // a trailing `%` also matches the empty rest
+    }
+    return p == pattern.size();
+}
+
 std::optional<long long> parseInteger(std::string_view text)
 {
     text = trim(text);

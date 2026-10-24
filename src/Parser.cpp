@@ -11,6 +11,7 @@
 ///     DESCRIBE [<table>]
 ///     REM <comment>    -- <comment>
 ///
+/// `<op>` is one of `=` `!=` `<>` `<` `<=` `>` `>=` or `LIKE` (with `%` and `_` wildcards).
 /// Keywords are case-insensitive. A trailing `;` or `@` is ignored.
 
 #include <format>
@@ -245,17 +246,21 @@ private:
         }
     }
 
-    /// @brief Parses `<column> <op> <value>`, after the WHERE keyword.
+    /// @brief Parses `<column> <op> <value>`, after the WHERE keyword; `<op>` is a comparison or `LIKE`.
     /// @return The condition.
     /// @throws SqlError On a syntax error.
     Condition parseCondition()
     {
         Condition condition;
         condition.column = expectWord("a column name");
-        if (peek().kind != TokenKind::Symbol || !isComparison(peek().text)) {
-            fail("a comparison (= != < <= > >=)");
+        if (acceptKeyword("LIKE")) {
+            condition.op = "LIKE";
+        } else {
+            if (peek().kind != TokenKind::Symbol || !isComparison(peek().text)) {
+                fail("a comparison (= != < <= > >= or LIKE)");
+            }
+            condition.op = next().text;
         }
-        condition.op = next().text;
         condition.value = expectValue();
         return condition;
     }

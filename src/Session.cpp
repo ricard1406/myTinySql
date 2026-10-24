@@ -18,10 +18,15 @@ namespace {
 /// @brief Applies a WHERE test to one value.
 /// @param fieldValue The row's value in the tested column.
 /// @param condition The test.
-/// @return True if the value passes. Numbers compare as numbers when both sides are integers,
+/// @return True if the value passes. `LIKE` matches a pattern, ignoring case (see matchesLike()).
+///         The other operators compare numbers as numbers when both sides are integers,
 ///         otherwise as case-sensitive text.
 bool matches(std::string_view fieldValue, const Condition& condition)
 {
+    if (condition.op == "LIKE") {
+        return matchesLike(fieldValue, condition.value);
+    }
+
     std::strong_ordering order = std::strong_ordering::equal;
     auto left = parseInteger(fieldValue);
     auto right = parseInteger(condition.value);

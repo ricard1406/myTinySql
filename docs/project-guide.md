@@ -12,19 +12,19 @@ The current version is **C++20**. It has small classes with one job each, `std::
 
 What it supports:
 
-- `SELECT` of columns, `*` or `'quoted text'`, with an optional `WHERE <col> <op> <value>` (`=` `!=` `<>` `<` `<=` `>` `>=`)
+- `SELECT` of columns, `*` or `'quoted text'`, with an optional `WHERE <col> <op> <value>` (`=` `!=` `<>` `<` `<=` `>` `>=`, or `LIKE` to search text)
 - `INSERT INTO <table> VALUES (...)`: assigns the next ID and checks every value against its column width
 - `UPDATE <table> SET <col> = <value>, ... WHERE <col> <op> <value>`: changes the matching rows (the WHERE is required)
 - `DELETE FROM <table> WHERE <col> <op> <value>`: removes the matching rows (the WHERE is required)
 - `COLUMN <col> FORMAT A<n>` to set a column's display width (the idea comes from Oracle SQL*Plus)
 - `DESCRIBE` and `DESCRIBE <table>`, and `REM` and `--` comments
-- Three ways to run it: a script file, an interactive prompt, or a browser page on port 8080 (with buttons to show, add, edit and delete rows)
+- Three ways to run it: a script file, an interactive prompt, or a browser page on port 8080 (with buttons to show, search, add, edit and delete rows)
 
 This guide describes the rewritten version. It was checked on 2026-10-20 by building with g++ 15.2 (no warnings) and running `make test` (6 test scripts, all passing).
 
 **On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (public since 2026-10-22). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), and the Doxygen documentation of the code is at [ricard1406.github.io/myTinySql](https://ricard1406.github.io/myTinySql/), rebuilt automatically after every push.
 
-> **DISCLAIMER: All data in this project is sample data, for testing purposes only. The companies, addresses and other values are fictional or AI generated. Many names in the `EMPLOY` table are those of historical Italian composers, used only as sample values; the other columns of those rows are not real information about them. Any other resemblance to real persons, living or dead, or actual places is purely coincidental.**
+> **DISCLAIMER: All data in this project is sample data, for testing purposes only. The companies, addresses and other values are fictional or AI generated. Many names in the `EMPLOY` table are those of historical Italian composers, used only as sample values; the other values in those rows (such as city and genre) are sample data and may not be accurate. Any other resemblance to real persons, living or dead, or actual places is purely coincidental.**
 
 ## Project structure
 
@@ -47,7 +47,7 @@ The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,094 
 
 | Path | Content |
 | --- | --- |
-| `data/` | `SYSTEM_TABLE` (25 lines, 4 tables), `EMPLOY_DATA` (70 rows), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows) |
+| `data/` | `SYSTEM_TABLE` (26 lines, 4 tables), `EMPLOY_DATA` (70 rows: ID, NOME, COGNOME, VIA, CITTA, GENERE), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows) |
 | `examples/` | `select.sql`, `describe.sql`, `insert.sql`, `company.sql`. `insert.sql` adds rows to `data/`; `company.sql` holds the rows that filled `COMPANY_DATA`. |
 | `tests/` | 6 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
@@ -123,10 +123,10 @@ Each line is 80 characters long and describes one column. `SYSTEM_TABLE` describ
 | LEN | 70–74 | Column width |
 | RECLEN | 75–79 | Length of a full row |
 
-Example: the EMPLOY column CITTA occupies characters 170–249 of a 250-character row.
+Example: the EMPLOY column CITTA occupies characters 170–249 of a 290-character row.
 
 ```
-14        5    EMPLOY              CITTA               S1   170  249  80   250
+14        5    EMPLOY              CITTA               S1   170  249  80   290
 ```
 
 To add a new table, add its lines to `data/SYSTEM_TABLE` and create an empty `data/<TABLE>_DATA` file. If the first column is called ID, `INSERT` fills it in, starting from 1.
@@ -180,7 +180,7 @@ Tables are read from `data/`, relative to the current directory. Use `--data=DIR
 | --- | --- | --- |
 | Script | `./myTinySql --sqlfile=examples/select.sql` | `--sqlfile=-` reads standard input. The exit code is 1 if any statement failed. |
 | Interactive | `./myTinySql` | A `tinysql>` prompt; one or more statements per line; Ctrl+D quits |
-| Browser | `./myTinySql --http` | Open http://localhost:8080: buttons to show, describe and add rows, Edit and Delete on each row, and a box for any SQL |
+| Browser | `./myTinySql --http` | Open http://localhost:8080: buttons to show, describe, search and add rows, Edit and Delete on each row, and a box for any SQL |
 
 Other options: `--port=N`, `--data=DIR`, `--help`, and `--allow=LIST`, a comma-separated list of client IP prefixes the server accepts, for example `--allow=127.,192.168.` for your own machine and home network. Without it, the server accepts everyone.
 
@@ -192,6 +192,7 @@ Other options: `--port=N`, `--data=DIR`, `--help`, and `--allow=LIST`, a comma-s
 | --- | --- |
 | Table list + **Show rows** | `SELECT * FROM <table>` |
 | **Describe** | `DESCRIBE <table>` |
+| **Search** row (a column, a text, the Search button; an empty text shows every row) | `SELECT * FROM <table> WHERE <col> LIKE '%text%'` |
 | **List tables** | `DESCRIBE` |
 | **Add a row** form (one field per column, ID left out) | `INSERT INTO <table> VALUES ('…','…');SELECT * FROM <table>` |
 | **Edit** on each row that has an ID: the cells become input boxes; **Save** (or Enter) sends only the changed columns, **Cancel** (or Escape) sends nothing | `UPDATE <table> SET <col> = '…', … WHERE ID = <n>;SELECT * FROM <table>` |
@@ -210,7 +211,7 @@ Keywords and table and column names can be upper or lower case. Write one statem
 | Command | Syntax |
 | --- | --- |
 | SELECT | `SELECT <col>,<col>,... FROM <TABLE>` or `SELECT * FROM <TABLE>`. A `'quoted text'` in the list is printed on every row. |
-| WHERE | `... WHERE <col> <op> <value>` with `=` `!=` `<>` `<` `<=` `>` `>=`, on any column of the table. Whole numbers compare as numbers; text is case-sensitive. |
+| WHERE | `... WHERE <col> <op> <value>` with `=` `!=` `<>` `<` `<=` `>` `>=`, on any column of the table. Whole numbers compare as numbers; text is case-sensitive. `WHERE <col> LIKE '<pattern>'` searches text, ignoring case: `%` is any text, `_` one character, e.g. `NOME LIKE '%fran%'`. |
 | INSERT | `INSERT INTO <TABLE> VALUES (v1,v2,...)`. Leave out the ID to get the next one, or give an unused ID first. Quote a value that has a comma: `'Rossi, Jr'`. |
 | UPDATE | `UPDATE <TABLE> SET <col> = <value>, <col> = <value> WHERE <col> <op> <value>`. The WHERE is required, the ID can't be changed, and a value with spaces needs quotes: `SET VIA = 'Via Roma 1'`. |
 | DELETE | `DELETE FROM <TABLE> WHERE <col> <op> <value>`. The WHERE is required, so a whole table can't be emptied by mistake. `SYSTEM_TABLE` can't be changed this way. |
