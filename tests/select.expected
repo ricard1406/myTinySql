@@ -104,3 +104,25 @@ ID-------- NAME------------------------------------
 > SELECT ID FROM EMPLOY WHERE NOME LIKE
 ERROR: expected a value but found end of statement
 
+> SELECT ID,TOWN FROM COMPANY WHERE TOWN != Torino
+ID-------- TOWN----------------------------------------------------------------------------
+2          Milano
+3          Bologna
+4          Napoli
+5          Verona
+6          Roma
+7          Firenze
+8          Genova
+(7 rows)
+
+> SELECT ID,TYPE FROM COMPANY WHERE ID <> 5
+ID-------- TYPE------------------------------------
+1          Construction
+2          Software
+3          Transport
+4          Bakery
+6          Electronics
+7          Winery
+8          Insurance
+(7 rows)
+
