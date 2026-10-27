@@ -19,7 +19,7 @@ namespace tinysql {
 struct ResultSet {
     std::vector<std::string> headers;        ///< Column titles.
     std::vector<std::size_t> widths;         ///< Display width of each column in console output.
-    std::vector<bool> literal;               ///< True for a `'literal'` SELECT item.
+    std::vector<bool> literal;               ///< True for a ``'literal'`` SELECT item.
     std::vector<std::size_t> storageWidths;  ///< Width of each column in the data file (0 for a literal).
     std::vector<std::vector<std::string>> rows;  ///< The values, one inner vector per row.
     std::optional<std::size_t> idColumn;     ///< Output column holding the row ID, if rows can be edited and deleted by ID.

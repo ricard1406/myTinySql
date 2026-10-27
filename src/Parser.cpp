@@ -29,7 +29,7 @@ namespace {
 /// @brief The kinds of token the tokenizer produces.
 enum class TokenKind {
     Word,    ///< A keyword, name or bare value, e.g. `SELECT`, `EMPLOY`, `Torino`, `42`.
-    String,  ///< A `'quoted string'`, without its quotes.
+    String,  ///< A ``'quoted string'``, without its quotes.
     Symbol,  ///< Punctuation or an operator: `( ) , * ; @ = != <> < <= > >=`.
     End,     ///< The end of the statement.
 };

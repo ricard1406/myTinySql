@@ -18,7 +18,7 @@ struct SelectItem {
     enum class Kind {
         Star,     ///< `*`: every column of the table.
         Column,   ///< A column name.
-        Literal,  ///< A `'quoted text'`, printed as-is on every row.
+        Literal,  ///< A ``'quoted text'``, printed as-is on every row.
     };
     Kind kind;         ///< Which kind of entry this is.
     std::string text;  ///< The column name or the literal text (`*` for Kind::Star).
