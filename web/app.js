@@ -33,8 +33,15 @@ async function runSql(sql) {
   return (await response.json()).results;
 }
 
-/** Writes a value as an SQL string, doubling any quote: O'Brien -> 'O''Brien'. */
-const quote = (value) => "'" + String(value).replaceAll("'", "''") + "'";
+/** A letter, a digit, or any non-ASCII character such as è: the server's rule for what may surround an apostrophe. */
+const isWordChar = (c) => c !== undefined && /[A-Za-z0-9\u0080-\uffff]/.test(c);
+
+/**
+ * Writes a value as an SQL string. An apostrophe between two letters stays as it is (d'Asti, L'Aquila):
+ * the server reads it as part of the word. Any other quote is doubled: Ca' Foscari -> 'Ca'' Foscari'.
+ */
+const quote = (value) => "'" + String(value).replace(/'/g, (mark, i, text) =>
+  isWordChar(text[i - 1]) && isWordChar(text[i + 1]) ? mark : "''") + "'";
 
 // ---------------------------------------------------------------- Small helpers
 

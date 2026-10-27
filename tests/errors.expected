@@ -23,7 +23,7 @@ ERROR: unterminated quoted string
 ERROR: table EMPLOY already has a row with ID 1
 
 > SELECT FIELD FROM SYSTEM_TABLE WHERE TABLE = EMPLOY AND
-ERROR: expected end of statement but found "AND"
+ERROR: WHERE takes one condition: AND is not supported
 
 > UPDATE EMPLOY SET NOME = X
 ERROR: expected WHERE (UPDATE always needs a condition, e.g. WHERE ID = 3) but found end of statement

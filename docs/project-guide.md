@@ -21,7 +21,7 @@ What it supports:
 - `DESCRIBE` and `DESCRIBE <table>`, and `REM` and `--` comments
 - Three ways to run it: a script file, an interactive prompt, or a browser page on port 8080 (with buttons to show, search, add, edit and delete rows, and to create tables)
 
-This guide describes the rewritten version. It was checked on 2026-10-20 by building with g++ 15.2 (no warnings) and running `make test` (7 test scripts, all passing).
+This guide describes the rewritten version. It was checked on 2026-10-20 by building with g++ 15.2 (no warnings) and running `make test` (8 test scripts, all passing).
 
 **On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (public since 2026-10-22). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), and the Doxygen documentation of the code is at [ricard1406.github.io/myTinySql](https://ricard1406.github.io/myTinySql/), rebuilt automatically after every push. Two guides sit next to the code: [INSTALLATION.md](../INSTALLATION.md) (requirements, build, first run) and [TESTING.md](../TESTING.md) (twelve checks, each with its command and expected result).
 
@@ -29,14 +29,14 @@ This guide describes the rewritten version. It was checked on 2026-10-20 by buil
 
 ## Project structure
 
-The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,597 lines in all; the database in `data/`, scripts in `examples/` and `tests/`, and notes in `docs/`.
+The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,646 lines in all; the database in `data/`, scripts in `examples/` and `tests/`, and notes in `docs/`.
 
 **Source code (`.cpp` in `src/`, `.hpp` in `include/`)**
 
 | File | Lines | Role |
 | --- | --- | --- |
 | `main.cpp` | 209 | Reads the command-line options and starts script, interactive or server mode |
-| `Statement.hpp`, `Parser.cpp` | 111 + 506 | The statement types and the tokenizer and parser that build them. `splitStatements()` cuts a script into statements. |
+| `Statement.hpp`, `Parser.cpp` | 111 + 555 | The statement types and the tokenizer and parser that build them. `splitStatements()` cuts a script into statements. |
 | `Session.hpp` / `.cpp` | 111 + 413 | Runs one statement at a time, keeps the `COLUMN` widths, and returns a `StatementResult` |
 | `Catalog.hpp` / `.cpp` | 75 + 133 | Reads `SYSTEM_TABLE` into `TableSchema` objects: each table's columns and their positions |
 | `TableFile.hpp` / `.cpp` | 93 + 202 | Reads the rows of a `<TABLE>_DATA` file, appends new ones, and edits or removes rows (through a temporary file) |
@@ -51,7 +51,7 @@ The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,597 
 | `data/` | `SYSTEM_TABLE` (30 lines, 5 tables), `EMPLOY_DATA` (37 rows: ID, NOME, COGNOME, VIA, CITTA, PERIODO), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows), `VINI-ITALY_DATA` (37 Italian wines: REGIONE, VINO, TIPO; made with **+ New table** on 2026-10-27) |
 | `web/` | The browser page: `index.html` (structure), `style.css` (look), `app.js` (behaviour), `favicon.svg` (icon) |
 | `examples/` | `select.sql`, `describe.sql`, `insert.sql`, `company.sql`. `insert.sql` adds rows to `data/`; `company.sql` holds the rows that filled `COMPANY_DATA`. |
-| `tests/` | 7 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
+| `tests/` | 8 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
 | `Makefile`, `Doxyfile`, `README.md` | Build rules, Doxygen settings and a quick start |
 | `INSTALLATION.md`, `TESTING.md` | The installation guide, and the testing guide: twelve checks with their expected results |
@@ -164,7 +164,7 @@ git clone https://github.com/ricard1406/myTinySql.git
 ```bash
 cd ~/Projects/myTinySQL
 make          # builds ./myTinySql; object files go to build/
-make test     # runs the 7 test scripts on a copy of tests/data/
+make test     # runs the 8 test scripts on a copy of tests/data/
 make doxygen  # HTML documentation of the code, from its Doxygen comments
 make clean    # removes build/ and the binary
 ```
@@ -230,6 +230,8 @@ Each browser connection is served in its own thread, so one slow or silent conne
 ### Commands
 
 Keywords and table and column names can be upper or lower case. Write one statement per line, or several separated by `;`. In `INSERT`, values with spaces need no quotes (`Via Garibaldi 3`). In `WHERE` they do: `WHERE CITTA = 'Reggio Emilia'`.
+
+**Apostrophes** (frequent in Italian names) are written as they are: an apostrophe between two letters or digits is part of the word, in quotes or not: ``WHERE CITTA = L'Aquila``, ``WHERE VINO = 'Barbera d'Asti'``, ``INSERT INTO EMPLOY VALUES (Gabriele, D'Annunzio, Via dell'Orto 3, L'Aquila)``. Only an apostrophe next to a space or at the end of a value, as in Ca' Foscari, must be written twice inside quotes: ``'Ca'' Foscari'``. Writing every apostrophe twice, as standard SQL does (``'Barbera d''Asti'``), also still works. The web page does all this by itself.
 
 | Command | Syntax |
 | --- | --- |

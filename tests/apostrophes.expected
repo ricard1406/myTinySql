@@ -1,0 +1,62 @@
+> INSERT INTO EMPLOY VALUES (Gabriele,D'Annunzio,Via dell'Orto 3,L'Aquila)
+1 row inserted into EMPLOY with ID 69
+
+> INSERT INTO EMPLOY VALUES ('Anna Maria', 'Dell'Acqua', 'Corso Sant'Angelo', 'Reggio nell''Emilia')
+1 row inserted into EMPLOY with ID 70
+
+> INSERT INTO EMPLOY VALUES (Piero,Nell'800,'Via d'Azeglio, 12',Città dell'Arte)
+1 row inserted into EMPLOY with ID 71
+
+> SELECT * FROM EMPLOY WHERE ID > 68
+ID-------- NOME------------------------------------ COGNOME--------------------------------- VIA----------------------------------------------------------------------------- CITTA---------------------------------------------------------------------------
+69         Gabriele                                 D'Annunzio                               Via dell'Orto 3                                                                  L'Aquila
+70         Anna Maria                               Dell'Acqua                               Corso Sant'Angelo                                                                Reggio nell'Emilia
+71         Piero                                    Nell'800                                 Via d'Azeglio, 12                                                                Città dell'Arte
+(3 rows)
+
+> SELECT ID,COGNOME FROM EMPLOY WHERE CITTA = L'Aquila
+ID-------- COGNOME---------------------------------
+69         D'Annunzio
+(1 row)
+
+> SELECT ID,COGNOME FROM EMPLOY WHERE COGNOME = 'Dell'Acqua'
+ID-------- COGNOME---------------------------------
+70         Dell'Acqua
+(1 row)
+
+> SELECT ID,COGNOME FROM EMPLOY WHERE COGNOME = 'Dell''Acqua'
+ID-------- COGNOME---------------------------------
+70         Dell'Acqua
+(1 row)
+
+> SELECT ID,VIA FROM EMPLOY WHERE VIA LIKE '%sant'a%'
+ID-------- VIA-----------------------------------------------------------------------------
+70         Corso Sant'Angelo
+(1 row)
+
+> UPDATE EMPLOY SET CITTA = Sant'Agata WHERE COGNOME = D'Annunzio
+1 row updated in EMPLOY
+
+> SELECT ID,CITTA FROM EMPLOY WHERE ID = 69
+ID-------- CITTA---------------------------------------------------------------------------
+69         Sant'Agata
+(1 row)
+
+> SELECT 'it''s', COGNOME FROM EMPLOY WHERE ID = 70
+it's COGNOME---------------------------------
+it's Dell'Acqua
+(1 row)
+
+> SELECT ID FROM EMPLOY WHERE VIA = Via dell'Orto 3
+ERROR: put a value with spaces in quotes, e.g. VIA = 'Via dell'Orto 3'
+
+> SELECT ID FROM EMPLOY WHERE CITTA = 'Ca' Foscari'
+ERROR: unterminated quoted string (an apostrophe at the end of a word, as in Ca' Foscari, is written twice inside quotes: 'Ca'' Foscari')
+
+> SELECT ID FROM EMPLOY WHERE CITTA = 'Ca'' Foscari'
+ID--------
+(0 rows)
+
+> SELECT ID FROM EMPLOY WHERE CITTA = Roma OR CITTA = Torino
+ERROR: WHERE takes one condition: OR is not supported
+

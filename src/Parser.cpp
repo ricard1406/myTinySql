@@ -14,6 +14,9 @@
 ///
 /// `<op>` is one of `=` `!=` `<>` `<` `<=` `>` `>=` or `LIKE` (with `%` and `_` wildcards).
 /// Keywords are case-insensitive. A trailing `;` or `@` is ignored.
+///
+/// A ``'`` between two letters or digits is an apostrophe, part of the word, as in d'Asti or L'Aquila:
+/// it never starts or ends a quoted string. ``''`` inside quotes still stands for one quote.
 
 #include <format>
 #include <string_view>
@@ -40,8 +43,32 @@ struct Token {
     std::string text;  ///< Its text.
 };
 
-/// @brief The characters that end a word.
+/// @brief The characters that end a word (a ``'`` only when it is not an apostrophe, see isApostrophe()).
 constexpr std::string_view kDelimiters = " \t\r\n(),*;@=<>!'";
+
+/// @brief Tells whether a character can stand next to an apostrophe inside a word.
+/// @param c The character.
+/// @return True for an ASCII letter or digit, or any byte of a UTF-8 character such as `è`.
+bool isWordChar(char c)
+{
+    const auto byte = static_cast<unsigned char>(c);
+    return (byte >= 'A' && byte <= 'Z') || (byte >= 'a' && byte <= 'z') || (byte >= '0' && byte <= '9')
+        || byte >= 0x80;
+}
+
+/// @brief Tells whether the ``'`` at a position is an apostrophe inside a word, as in d'Asti, L'Aquila or dell'800.
+///
+/// Italian (and other languages) put apostrophes inside names, so a ``'`` with a letter or digit on both
+/// sides is part of the word, in quotes or not. Only a ``'`` next to a space, a comma, a bracket or the
+/// end of the text starts or ends a quoted string.
+/// @param text The text.
+/// @param i A position in it.
+/// @return True if the character there is a ``'`` with word characters on both sides (see isWordChar()).
+bool isApostrophe(std::string_view text, std::size_t i)
+{
+    return i > 0 && i + 1 < text.size() && text[i] == '\''
+        && isWordChar(text[i - 1]) && isWordChar(text[i + 1]);
+}
 
 /// @brief Splits a statement into tokens.
 /// @param sql The statement.
@@ -56,17 +83,24 @@ std::vector<Token> tokenize(std::string_view sql)
         if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
             ++i;
         } else if (c == '\'') {
-            // 'quoted string', with '' standing for one quote
+            // 'quoted string', with '' standing for one quote; an apostrophe (d'Asti) does not end it
             std::string text;
+            const bool afterWord = i > 0 && isWordChar(sql[i - 1]);  // e.g. Foscari' in 'Ca' Foscari'
             ++i;
             while (true) {
                 if (i >= sql.size()) {
-                    throw SqlError("unterminated quoted string");
+                    throw SqlError(afterWord ? "unterminated quoted string (an apostrophe at the end of a word, "
+                                               "as in Ca' Foscari, is written twice inside quotes: 'Ca'' Foscari')"
+                                             : "unterminated quoted string");
                 }
                 if (sql[i] == '\'') {
                     if (i + 1 < sql.size() && sql[i + 1] == '\'') {
                         text += '\'';
                         i += 2;
+                        continue;
+                    }
+                    if (isApostrophe(sql, i)) {
+                        text += sql[i++];
                         continue;
                     }
                     ++i;
@@ -90,8 +124,12 @@ std::vector<Token> tokenize(std::string_view sql)
                 ++i;
             }
         } else {
-            const std::size_t end = sql.find_first_of(kDelimiters, i);
-            const std::size_t stop = end == std::string_view::npos ? sql.size() : end;
+            // A word runs to the next delimiter; an apostrophe inside it (L'Aquila) is part of the word.
+            std::size_t stop = i;
+            while (stop < sql.size()
+                   && (kDelimiters.find(sql[stop]) == std::string_view::npos || isApostrophe(sql, stop))) {
+                ++stop;
+            }
             tokens.push_back({TokenKind::Word, std::string(sql.substr(i, stop - i))});
             i = stop;
         }
@@ -264,6 +302,16 @@ private:
             condition.op = next().text;
         }
         condition.value = expectValue();
+        if (peek().kind == TokenKind::Word) {
+            if (equalsIgnoreCase(peek().text, "AND") || equalsIgnoreCase(peek().text, "OR")) {
+                throw SqlError(std::format("WHERE takes one condition: {} is not supported", toUpper(peek().text)));
+            }
+            std::string words = condition.value;
+            while (peek().kind == TokenKind::Word) {
+                words += ' ' + next().text;
+            }
+            throw SqlError(std::format("put a value with spaces in quotes, e.g. {} = '{}'", condition.column, words));
+        }
         return condition;
     }
 
@@ -483,8 +531,9 @@ std::vector<std::string> splitStatements(std::string_view script)
         }
         std::string current;
         bool inQuotes = false;
-        for (char c : line) {
-            if (c == '\'') {
+        for (std::size_t i = 0; i < line.size(); ++i) {
+            const char c = line[i];
+            if (c == '\'' && !isApostrophe(line, i)) {
                 inQuotes = !inQuotes;
             }
             if (c == ';' && !inQuotes) {

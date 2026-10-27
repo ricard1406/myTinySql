@@ -11,7 +11,7 @@ command and expected result in this file was run before it was written down.
 | # | Check | Command | Expected | What it shows |
 | --- | --- | --- | --- | --- |
 | 1 | Clean build | `make clean && make` | no warnings | The compiler finds nothing suspicious |
-| 2 | Automated tests | `make test` | 7 × `PASS` | The SQL gives exactly the expected output |
+| 2 | Automated tests | `make test` | 8 × `PASS` | The SQL gives exactly the expected output |
 | 3 | Command line | `echo "..." \| ./myTinySql ...` | rows, errors, exit code | Scripts and error handling work |
 | 4 | Browser server | `curl ...` | 200, 404, 405 | The server answers correctly |
 | 5 | Idle connection | `exec 3<>/dev/tcp/...` | `200 OK` after 6 s | Browsers that "preconnect" are served |
@@ -19,7 +19,7 @@ command and expected result in this file was run before it was written down.
 | 7 | File integrity | `awk` on `data/` | one length per file | Every row has the exact fixed width |
 | 8 | Memory safety | sanitizer build | 0 problems | No memory errors or undefined behaviour |
 | 9 | Documentation | `make doxygen` | no warnings | Every declaration is documented |
-| 10 | Fresh install | `git clone` + `make test` | 7 × `PASS` | The project works from a clean copy |
+| 10 | Fresh install | `git clone` + `make test` | 8 × `PASS` | The project works from a clean copy |
 | 11 | By hand, in a browser | checklist | as described | The web page works for a person |
 | 12 | On GitHub | Actions tab | green check | The online documentation is up to date |
 
@@ -104,6 +104,7 @@ make test
 
 ```text
 tests/run_tests.sh
+PASS apostrophes
 PASS create
 PASS delete
 PASS describe
@@ -115,8 +116,9 @@ PASS update
 
 **How it works:** each `tests/NAME.sql` is a script of statements, and `tests/NAME.expected` is the exact
 output it must produce. `tests/run_tests.sh` runs every script on a fresh copy of `tests/data/` and compares
-the output with `diff`. One different character is enough to fail. Together, the 7 scripts cover SELECT,
-WHERE with every operator and `LIKE`, INSERT, UPDATE, DELETE, CREATE TABLE, DESCRIBE, COLUMN, and the error messages.
+the output with `diff`. One different character is enough to fail. Together, the 8 scripts cover SELECT,
+WHERE with every operator and `LIKE`, INSERT, UPDATE, DELETE, CREATE TABLE, DESCRIBE, COLUMN, apostrophes in values
+(d'Asti, L'Aquila), and the error messages.
 
 **If a test fails**, the runner prints the difference: lines starting with `-` are what was expected,
 lines starting with `+` are what the program printed instead.
@@ -345,6 +347,7 @@ done
 **You should see** (output, don't type it):
 
 ```text
+tests/apostrophes.sql: 0 problems
 tests/create.sql: 0 problems
 tests/delete.sql: 0 problems
 tests/describe.sql: 0 problems
@@ -385,7 +388,7 @@ make test
 cd "$PROJECT"
 ```
 
-**You should see** `0`, then the same 7 `PASS` lines as in check 2.
+**You should see** `0`, then the same 8 `PASS` lines as in check 2.
 
 **Why this check exists:** a fresh copy has no `build/` folder and nothing left over from earlier work.
 That is exactly how a bug in `make doxygen` was found: it worked on the developer's machine, where
@@ -406,7 +409,7 @@ Start the server on the copy of the tables, then open http://localhost:18080 in 
 | Click **COMPANY** on the left | The companies (8, plus the 20 test firms if you ran check 6), each row with **Edit** and **Delete** |
 | Click **SYSTEM_TABLE** | Its rows, with no **+ New row** and no Edit/Delete: the catalogue is read-only |
 | Click **EMPLOY**; in **Search in** keep NOME, type `fran`, click **Search** | The rows whose NOME contains "fran" (Francesco, Franco) |
-| Click **+ New row**, fill every field, with an apostrophe in one (``O'Brien``), click **Add row** | A "1 row inserted" message; the form closes and the new row is the last one, apostrophe included |
+| Click **+ New row**, fill every field, with an apostrophe in one (``D'Annunzio``), click **Add row** | A "1 row inserted" message; the form closes and the new row is the last one, apostrophe included. The SQL above the rows shows ``'D'Annunzio'`` as typed |
 | On that row, click **Edit**, change a value, press **Escape** | The row is unchanged, and the SQL line above the rows still shows the INSERT: nothing was sent |
 | Click **Edit** again, change a value to one with a space (`Reggio Emilia`), press **Enter** | "1 row updated", the new value shown |
 | Click **Delete** on it, then **Cancel** in the dialog | Nothing is deleted |

@@ -67,7 +67,7 @@ This creates the program `./myTinySql`. Object files go to `build/`.
 make test
 ```
 
-Seven test scripts run on a copy of the sample tables. Each line must say `PASS`.
+Eight test scripts run on a copy of the sample tables. Each line must say `PASS`.
 
 ## 5. Run it
 
