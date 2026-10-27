@@ -406,7 +406,7 @@ Start the server on the copy of the tables, then open http://localhost:18080 in 
 | Click **COMPANY** on the left | The companies (8, plus the 20 test firms if you ran check 6), each row with **Edit** and **Delete** |
 | Click **SYSTEM_TABLE** | Its rows, with no **+ New row** and no Edit/Delete: the catalogue is read-only |
 | Click **EMPLOY**; in **Search in** keep NOME, type `fran`, click **Search** | The rows whose NOME contains "fran" (Francesco, Franco) |
-| Click **+ New row**, fill every field, with an apostrophe in one (`O'Brien`), click **Add row** | A "1 row inserted" message; the form closes and the new row is the last one, apostrophe included |
+| Click **+ New row**, fill every field, with an apostrophe in one (``O'Brien``), click **Add row** | A "1 row inserted" message; the form closes and the new row is the last one, apostrophe included |
 | On that row, click **Edit**, change a value, press **Escape** | The row is unchanged, and the SQL line above the rows still shows the INSERT: nothing was sent |
 | Click **Edit** again, change a value to one with a space (`Reggio Emilia`), press **Enter** | "1 row updated", the new value shown |
 | Click **Delete** on it, then **Cancel** in the dialog | Nothing is deleted |

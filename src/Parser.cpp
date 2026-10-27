@@ -102,7 +102,7 @@ std::vector<Token> tokenize(std::string_view sql)
 
 /// @brief Describes a token for an error message.
 /// @param token The token.
-/// @return E.g. `"FROM"`, `'text'`, or "end of statement".
+/// @return E.g. `"FROM"`, ``'text'``, or "end of statement".
 std::string describe(const Token& token)
 {
     switch (token.kind) {

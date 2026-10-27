@@ -12,7 +12,7 @@
 
 namespace tinysql {
 
-/// @brief One entry of a SELECT list: `*`, a column name, or a `'quoted literal'` printed on every row.
+/// @brief One entry of a SELECT list: `*`, a column name, or a ``'quoted literal'`` printed on every row.
 struct SelectItem {
     /// @brief Which kind of entry this is.
     enum class Kind {

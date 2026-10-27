@@ -112,8 +112,8 @@ Then open `build/doxygen/html/index.html` in a browser. The same pages are onlin
 | Problem | Cause and fix |
 | --- | --- |
 | `fatal error: format: No such file or directory` while building | The compiler is too old. Install g++ 13 or newer and build with `make CXX=g++-13`. |
-| `data directory 'data' not found` | The program was started outside the project folder. `cd` into it, or pass `--data=/path/to/myTinySql/data`. |
-| `web page 'web/index.html' not found` | The program was started outside the project folder, so the page's files in `web/` were not found. `cd` into it, or pass `--web=/path/to/myTinySql/web`. |
+| ``data directory 'data' not found`` | The program was started outside the project folder. `cd` into it, or pass `--data=/path/to/myTinySql/data`. |
+| ``web page 'web/index.html' not found`` | The program was started outside the project folder, so the page's files in `web/` were not found. `cd` into it, or pass `--web=/path/to/myTinySql/web`. |
 | `bind to port 8080: Address already in use` | Another program (or another myTinySql) already uses port 8080. Stop it, or choose another port: `./myTinySql --http --port=8081`. |
 | The browser page does not load from another computer | The server listens on all network interfaces, but a firewall may block port 8080. Use `--allow=192.168.` to accept only your home network. |
 
