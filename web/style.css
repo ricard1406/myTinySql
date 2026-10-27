@@ -1,0 +1,346 @@
+/*
+  myTinySQL - the look of the browser page.
+
+  The colours are defined once here, as variables, and used everywhere below.
+  The second set applies automatically when the computer uses a dark theme.
+*/
+:root {
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+  --border: #e1e5ee;
+  --text: #1d2433;
+  --muted: #667085;
+  --accent: #2f6fdf;
+  --accent-soft: #e8f0fe;
+  --danger: #c93a3a;
+  --danger-soft: #fdecec;
+  --ok: #1f8a4c;
+  --ok-soft: #e6f4ec;
+  --editing: #fff8e1;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --radius: 10px;
+  --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "DejaVu Sans Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151c;
+    --surface: #1a1f29;
+    --surface-2: #202634;
+    --border: #2c3445;
+    --text: #e6e9f0;
+    --muted: #98a2b3;
+    --accent: #6b9cff;
+    --accent-soft: #1e2b47;
+    --danger: #ff7b7b;
+    --danger-soft: #3a1f24;
+    --ok: #5fd08f;
+    --ok-soft: #1a3326;
+    --editing: #3a3420;
+    --shadow: none;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* The base size: every size below in "rem" is a multiple of it. Settings > Text size changes it. */
+html { font-size: 16px; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 0.9375rem/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+}
+
+code { font-family: var(--mono); font-size: 0.92em; }
+h1, h2, h3 { margin: 0; line-height: 1.25; }
+h1 { font-size: 1.35rem; }
+h2 { font-size: 1.1rem; }
+h3 { font-size: 1rem; }
+.muted { color: var(--muted); margin: 0.15rem 0 0; }
+.small { font-size: 0.85rem; }
+[hidden] { display: none !important; }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.brand-name { font-weight: 700; font-size: 1.1rem; }
+.brand-note { color: var(--muted); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+.topbar-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; white-space: nowrap; }
+.topbar-link:hover { text-decoration: underline; }
+
+/* ---------- Layout: sidebar + content ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.content { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+
+.sidebar-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0.25rem 0.5rem 0.5rem;
+}
+.table-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.table-list button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.table-list button:hover { background: var(--surface); }
+.table-list button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.table-list .count { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+.new-table { margin-top: 0.5rem; width: 100%; justify-content: center; border-style: dashed; border-color: var(--border); }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.1rem 1.25rem;
+  min-width: 0;
+}
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.9rem; }
+
+/* ---------- Buttons and fields ---------- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.button:hover { border-color: var(--accent); }
+.button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.button.primary:hover { filter: brightness(1.08); }
+.button.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.button.ghost:hover { color: var(--text); background: var(--surface-2); }
+.button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.button.small { padding: 0.2rem 0.55rem; font-size: 0.82rem; }
+.button.link-danger { color: var(--danger); }
+.button:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+
+input, select, textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.42rem 0.6rem;
+  min-width: 0;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+.field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; color: var(--muted); }
+.field.grow { flex: 1; }
+.field input, .field select { font-size: 0.95rem; }
+
+.actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.actions.end { justify-content: flex-end; }
+
+/* ---------- Search toolbar and "new row" form ---------- */
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.9rem;
+}
+
+.new-row {
+  padding: 0.9rem;
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  margin-bottom: 0.9rem;
+}
+.new-row h3 { margin-bottom: 0.6rem; }
+.new-row-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- The SQL of the last action ---------- */
+.last-sql {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.7rem;
+  margin-bottom: 0.9rem;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.88rem;
+}
+.last-sql code { color: var(--text); word-break: break-word; }
+.badge { padding: 0.08rem 0.5rem; border-radius: 999px; font-size: 0.78rem; white-space: nowrap; }
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.error { background: var(--danger-soft); color: var(--danger); }
+
+/* ---------- Data grid ---------- */
+.grid-wrap { overflow: auto; max-height: 62vh; border: 1px solid var(--border); border-radius: var(--radius); }
+.grid { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.grid th, .grid td { padding: 0.45rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.grid th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  z-index: 1;
+}
+.grid tbody tr:hover { background: var(--surface-2); }
+.grid tbody tr:last-child td { border-bottom: 0; }
+.grid td.id { color: var(--muted); font-variant-numeric: tabular-nums; }
+.grid td.row-actions { text-align: right; width: 1%; }
+.grid td.row-actions .actions { flex-wrap: nowrap; justify-content: flex-end; }
+.grid .row-actions {                 /* the Edit/Delete column stays visible on the right */
+  position: sticky;
+  right: 0;
+  background: var(--surface);
+  box-shadow: -10px 0 10px -10px rgba(16, 24, 40, 0.25);
+}
+.grid th.row-actions { background: var(--surface-2); z-index: 2; }
+.grid tbody tr:hover td.row-actions { background: var(--surface-2); }
+.grid tr.editing td.row-actions { background: var(--editing); }
+.grid tr.editing { background: var(--editing) !important; }
+.grid tr.editing input { width: 100%; min-width: 7rem; padding: 0.25rem 0.45rem; }
+.empty { color: var(--muted); text-align: center; padding: 1.5rem; margin: 0; }
+
+/* ---------- SQL console ---------- */
+.console textarea {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-bottom: 0.6rem;
+}
+.console-results { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.9rem; }
+.result { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+  font-size: 0.88rem;
+}
+.result-head code { word-break: break-word; }
+.result .grid-wrap { border: 0; border-radius: 0; border-top: 1px solid var(--border); max-height: 40vh; }
+
+/* ---------- Dialog and messages ---------- */
+.dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 1.25rem;
+  width: min(28rem, 90vw);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+.dialog.wide { width: min(38rem, 92vw); }
+.dialog::backdrop { background: rgba(10, 14, 22, 0.45); }
+.dialog p { margin: 0.5rem 0 1rem; }
+
+.toasts { position: fixed; right: 1rem; bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 10; }
+.toast {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--surface);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  font-size: 0.9rem;
+  max-width: 24rem;
+  animation: toast-in 0.15s ease-out;
+}
+.toast.error { background: var(--danger); color: #fff; }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } }
+
+/* ---------- Settings ---------- */
+.setting { border: 0; padding: 0; margin: 1rem 0; }
+.setting legend { font-weight: 600; margin-bottom: 0.5rem; padding: 0; }
+
+/* A row of choices that look like joined buttons; the radio buttons themselves are hidden */
+.segmented { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.segmented label { flex: 1; text-align: center; cursor: pointer; }
+.segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented span {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  border-left: 1px solid var(--border);
+  white-space: nowrap;
+}
+.segmented label:first-child span { border-left: 0; }
+.segmented label:hover span { background: var(--surface-2); }
+.segmented input:checked + span { background: var(--accent); color: #fff; }
+.segmented input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+.setting .sample { margin-top: 0.6rem; }
+
+/* ---------- New table ---------- */
+.check { display: flex; align-items: flex-start; gap: 0.5rem; margin: 0.9rem 0; font-size: 0.9rem; cursor: pointer; }
+.check input { margin-top: 0.2rem; }
+.column-list { margin-bottom: 0.5rem; }
+.column-row {                        /* name, type, width, remove button */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem 5.5rem 2rem;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+.column-head { margin-bottom: 0.2rem; }
+.column-row .button.small { padding: 0.2rem 0; justify-content: center; }
+.sql-preview { margin: 0.9rem 0 0.5rem; }
+.form-error { color: var(--danger); background: var(--danger-soft); border-radius: 8px; padding: 0.45rem 0.7rem; font-size: 0.88rem; }
+
+/* ---------- Small screens: the sidebar goes on top ---------- */
+@media (max-width: 800px) {
+  .layout { grid-template-columns: 1fr; padding: 1rem; }
+  .table-list { flex-direction: row; flex-wrap: wrap; }
+  .table-list button { width: auto; }
+  .brand-note { display: none; }
+}

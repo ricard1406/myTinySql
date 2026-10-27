@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <compare>
 #include <format>
+#include <fstream>
 
 #include "Catalog.hpp"
 #include "TableFile.hpp"
@@ -73,6 +74,28 @@ ResultSet fitted(std::vector<std::string> headers, std::vector<std::vector<std::
 std::string plural(std::size_t n, std::string_view word)
 {
     return std::format("{} {}{}", n, word, n == 1 ? "" : "s");
+}
+
+/// @brief Longest table or column name: the width of the TABLE and FIELD columns of SYSTEM_TABLE.
+constexpr std::size_t kMaxNameLength = 20;
+
+/// @brief Longest row: SYSTEM_TABLE keeps column positions in 5 characters.
+constexpr std::size_t kMaxRecordLength = 99999;
+
+/// @brief Checks a new table or column name.
+/// @param name The name.
+/// @param what "table" or "column", for the error message.
+/// @throws SqlError Unless the name starts with a letter, has only letters, digits, `_` and `-`,
+///         and is at most kMaxNameLength characters long.
+void checkName(std::string_view name, std::string_view what)
+{
+    auto isLetter = [](char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'); };
+    auto isAllowed = [&](char c) { return isLetter(c) || (c >= '0' && c <= '9') || c == '_' || c == '-'; };
+    if (name.empty() || name.size() > kMaxNameLength || !isLetter(name.front())
+        || !std::ranges::all_of(name, isAllowed)) {
+        throw SqlError(std::format("invalid {} name '{}': use up to {} letters, digits, _ and -, starting with a letter",
+                                   what, name, kMaxNameLength));
+    }
 }
 
 }  // namespace
@@ -274,6 +297,75 @@ StatementResult Session::run(const DeleteStmt& stmt)
     StatementResult result;
     result.tableName = schema.name;
     result.message = std::format("{} deleted from {}", plural(removed, "row"), schema.name);
+    return result;
+}
+
+StatementResult Session::run(const CreateTableStmt& stmt)
+{
+    const Catalog catalog = Catalog::load(dataDir_);
+
+    // The new table's definition; names are kept in upper case, like the existing tables.
+    checkName(stmt.table, "table");
+    TableSchema schema{.name = toUpper(stmt.table), .columns = {}, .recordLength = 0};
+    auto sameName = [&](const TableSchema& t) { return equalsIgnoreCase(t.name, schema.name); };
+    if (std::ranges::any_of(catalog.tables(), sameName)) {
+        throw SqlError(std::format("table {} already exists", schema.name));
+    }
+    for (const ColumnDefinition& definition : stmt.columns) {
+        checkName(definition.name, "column");
+        const std::string name = toUpper(definition.name);
+        if (schema.indexOf(name)) {
+            throw SqlError(std::format("column {} appears twice", name));
+        }
+        if (name == "ID" && !schema.columns.empty()) {
+            throw SqlError("the ID column must be the first one: rows are numbered by it");
+        }
+        schema.columns.push_back(Column{
+            .name = name,
+            .type = definition.type,
+            .from = schema.recordLength,
+            .to = schema.recordLength + definition.width - 1,
+        });
+        schema.recordLength += definition.width;
+    }
+    if (schema.recordLength > kMaxRecordLength) {
+        throw SqlError(std::format("a row of table {} would be {} characters long: the limit is {}",
+                                   schema.name, schema.recordLength, kMaxRecordLength));
+    }
+
+    // One SYSTEM_TABLE line per column, numbered after the last line.
+    const TableSchema& catalogSchema = catalog.table(kCatalogTable);
+    const TableFile catalogFile(catalogSchema, catalog.dataFile(catalogSchema));
+    long long id = catalogFile.nextId();
+    std::vector<Row> lines;
+    for (std::size_t i = 0; i < schema.columns.size(); ++i) {
+        const Column& column = schema.columns[i];
+        lines.push_back({std::to_string(id++), std::to_string(i + 1), schema.name, column.name, column.type,
+                         std::to_string(column.from), std::to_string(column.to), std::to_string(column.width()),
+                         std::to_string(schema.recordLength)});
+    }
+
+    // First the empty data file, then the catalogue: if the catalogue cannot be written,
+    // the data file is removed again and nothing has changed.
+    const auto dataFile = catalog.dataFile(schema);
+    if (std::filesystem::exists(dataFile)) {
+        throw SqlError(std::format("data file {} already exists: remove it, or choose another name",
+                                   dataFile.filename().string()));
+    }
+    if (!std::ofstream(dataFile)) {
+        throw SqlError(std::format("cannot create {}", dataFile.string()));
+    }
+    try {
+        catalogFile.appendRows(lines);
+    } catch (...) {
+        std::filesystem::remove(dataFile);
+        throw;
+    }
+
+    StatementResult result;
+    result.tableName = schema.name;
+    result.message = std::format("table {} created with {} (row length {})", schema.name,
+                                 plural(schema.columns.size(), "column"), schema.recordLength);
     return result;
 }
 

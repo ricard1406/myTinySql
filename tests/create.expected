@@ -1,0 +1,96 @@
+> CREATE TABLE cars (ID NUMBER(10), Model CHAR(20), YEAR NUMBER(4))
+table CARS created with 3 columns (row length 34)
+
+> DESCRIBE CARS
+COLUMN TYPE FROM TO WIDTH
+ID     N1   0    9  10
+MODEL  S1   10   29 20
+YEAR   N1   30   33 4
+(3 columns)
+
+> SELECT TABLE,FIELD,TYPE,FROM,TO,LEN,RECLEN FROM SYSTEM_TABLE WHERE TABLE = CARS
+TABLE--------------- FIELD--------------- TYPE- FROM- TO--- LEN-- RECLEN
+CARS                 ID                   N1    0     9     10    34
+CARS                 MODEL                S1    10    29    20    34
+CARS                 YEAR                 N1    30    33    4     34
+(3 rows)
+
+> INSERT INTO CARS VALUES (Fiat 500,1957)
+1 row inserted into CARS with ID 1
+
+> INSERT INTO CARS VALUES ('Alfa Romeo Giulia',1962)
+1 row inserted into CARS with ID 2
+
+> SELECT * FROM CARS
+ID-------- MODEL--------------- YEAR
+1          Fiat 500             1957
+2          Alfa Romeo Giulia    1962
+(2 rows)
+
+> CREATE TABLE NOTES (TEXT CHAR(30))
+table NOTES created with 1 column (row length 30)
+
+> INSERT INTO NOTES VALUES (hello)
+1 row inserted into NOTES
+
+> SELECT * FROM NOTES
+TEXT--------------------------
+hello
+(1 row)
+
+> DESCRIBE
+TABLE------- COLUMNS ROW_LENGTH
+SYSTEM_TABLE 9       80
+EMPLOY       5       250
+COMPANY      5       250
+CAL_WEEKLY   6       35
+CARS         3       34
+NOTES        1       30
+(6 tables)
+
+> CREATE TABLE CARS (NAME CHAR(10))
+ERROR: table CARS already exists
+
+> CREATE TABLE BAD (NAME CHAR(10), name CHAR(5))
+ERROR: column NAME appears twice
+
+> CREATE TABLE BAD (NAME CHAR(10), ID NUMBER(10))
+ERROR: the ID column must be the first one: rows are numbered by it
+
+> CREATE TABLE BAD (NAME TEXT(10))
+ERROR: unknown type "TEXT" for column NAME: use CHAR(<width>) or NUMBER(<width>)
+
+> CREATE TABLE BAD (NAME CHAR(0))
+ERROR: invalid width "0" for column NAME: expected a positive number
+
+> CREATE TABLE BAD (NAME CHAR)
+ERROR: expected '(' but found ")"
+
+> CREATE TABLE 1BAD (NAME CHAR(10))
+ERROR: invalid table name '1BAD': use up to 20 letters, digits, _ and -, starting with a letter
+
+> CREATE TABLE BAD.TABLE (NAME CHAR(10))
+ERROR: invalid table name 'BAD.TABLE': use up to 20 letters, digits, _ and -, starting with a letter
+
+> CREATE TABLE ThisNameIsMuchTooLongForIt (NAME CHAR(10))
+ERROR: invalid table name 'ThisNameIsMuchTooLongForIt': use up to 20 letters, digits, _ and -, starting with a letter
+
+> CREATE TABLE BAD (NAME CHAR(99999), MORE CHAR(10))
+ERROR: a row of table BAD would be 100009 characters long: the limit is 99999
+
+> CREATE TABLE BAD ()
+ERROR: expected a column name but found ")"
+
+> CREATE BAD
+ERROR: expected TABLE but found "BAD"
+
+> DESCRIBE
+TABLE------- COLUMNS ROW_LENGTH
+SYSTEM_TABLE 9       80
+EMPLOY       5       250
+COMPANY      5       250
+CAL_WEEKLY   6       35
+CARS         3       34
+NOTES        1       30
+(6 tables)
+

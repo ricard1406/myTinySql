@@ -161,14 +161,23 @@ long long TableFile::nextId() const
 
 void TableFile::append(const Row& values) const
 {
-    if (values.size() != schema_.columns.size()) {
-        throw SqlError(std::format("table {} has {} columns, got {} values",
-                                   schema_.name, schema_.columns.size(), values.size()));
-    }
+    appendRows({values});
+}
 
-    std::string record(schema_.recordLength, ' ');
-    for (std::size_t i = 0; i < values.size(); ++i) {
-        place(record, schema_.columns[i], values[i]);
+void TableFile::appendRows(const std::vector<Row>& rows) const
+{
+    // Build every record first, so a bad value stops before the file is touched.
+    std::vector<std::string> records;
+    for (const Row& values : rows) {
+        if (values.size() != schema_.columns.size()) {
+            throw SqlError(std::format("table {} has {} columns, got {} values",
+                                       schema_.name, schema_.columns.size(), values.size()));
+        }
+        std::string record(schema_.recordLength, ' ');
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            place(record, schema_.columns[i], values[i]);
+        }
+        records.push_back(std::move(record));
     }
 
     // Make sure the new row starts on its own line, even if the file lacks a final newline.
@@ -185,7 +194,9 @@ void TableFile::append(const Row& values) const
     if (needsNewline) {
         out << '\n';
     }
-    out << record << '\n';
+    for (const std::string& record : records) {
+        out << record << '\n';
+    }
 }
 
 }  // namespace tinysql

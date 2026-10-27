@@ -28,7 +28,7 @@ A summary to help you study the new code: headers in `include/`, sources in `src
 
 4. **`exit()` became exceptions.** Old: `ErrorExit()` stopped the whole program, server included. New: any problem `throw`s a `SqlError`, `Session::execute()` catches it and returns a failed result, and the next statement runs.
 
-5. **Running is separate from printing.** Old: SELECT filled `Table2Print`, then printed it in three different ways. New: `Session` returns plain data (`StatementResult`), and `Output.cpp` turns it into console text or an HTML page. This makes each part easy to test on its own.
+5. **Running is separate from printing.** Old: SELECT filled `Table2Print`, then printed it in three different ways. New: `Session` returns plain data (`StatementResult`), and `Output.cpp` turns it into console text, or into JSON for the browser page in `web/`. This makes each part easy to test on its own.
 
 6. **Fixed offsets became a catalogue loaded at run time.** Old: `SetConstants()` hard-coded the field positions before every statement. New: `Catalog::load()` reads `SYSTEM_TABLE` into `TableSchema` / `Column{name, type, from, to}`. Only the catalogue's own layout is still fixed (`kTable{15, 34}` and so on).
 

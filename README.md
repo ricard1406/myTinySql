@@ -20,7 +20,7 @@ make test                                   # runs tests/*.sql and compares with
 make doxygen                                # HTML docs of the code in build/doxygen/html/ (needs doxygen)
 ./myTinySql --sqlfile=examples/select.sql   # run a script
 ./myTinySql                                 # type statements interactively
-./myTinySql --http                          # browser UI on http://localhost:8080 (show / add / edit / delete rows)
+./myTinySql --http                          # browser UI on http://localhost:8080 (show / add / edit / delete rows, create tables)
 ./myTinySql --help                          # all options
 ```
 
@@ -33,6 +33,7 @@ SELECT * FROM EMPLOY WHERE NOME LIKE '%fran%'
 INSERT INTO EMPLOY VALUES (Mario,Rossi,Via Garibaldi,Bologna,Moderno)
 UPDATE EMPLOY SET CITTA = 'Reggio Emilia' WHERE ID = 2
 DELETE FROM EMPLOY WHERE ID = 69
+CREATE TABLE CARS (ID NUMBER(10), MODEL CHAR(20), YEAR NUMBER(4))
 COLUMN NOME FORMAT A12
 DESCRIBE
 DESCRIBE EMPLOY
@@ -48,7 +49,9 @@ REM a comment
 | `data/` | The database: `SYSTEM_TABLE` (column positions of every table) and one `<TABLE>_DATA` file per table |
 | `examples/` | Sample scripts (`insert.sql` adds rows to `data/`) |
 | `tests/` | Golden-output tests, run on a frozen copy of the tables in `tests/data/` |
+| `web/` | The browser page: `index.html`, `style.css`, `app.js` (plain HTML, CSS and JavaScript) |
 | `docs/` | Study notes: project guide, old vs new code, `Statement.hpp` explained (start at `docs/README.md`) |
 
-To add a table, add one 80-character line per column to `data/SYSTEM_TABLE`
-(same layout as the existing lines) and create an empty `data/<TABLE>_DATA` file.
+To add a table, use `CREATE TABLE` (or **+ New table** on the web page). It adds one 80-character
+line per column to `data/SYSTEM_TABLE` and creates an empty `data/<TABLE>_DATA` file; you can also
+do both by hand.

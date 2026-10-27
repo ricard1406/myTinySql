@@ -7,6 +7,7 @@
 ///     INSERT INTO <table> VALUES (<value>[,<value>...])
 ///     UPDATE <table> SET <col> = <value>[,<col> = <value>...] WHERE <col> <op> <value>
 ///     DELETE FROM <table> WHERE <col> <op> <value>
+///     CREATE TABLE <table> (<col> CHAR(<width>)|NUMBER(<width>)[,...])
 ///     COLUMN <col> FORMAT A<width>
 ///     DESCRIBE [<table>]
 ///     REM <comment>    -- <comment>
@@ -142,6 +143,7 @@ public:
         if (keyword == "INSERT") return parseInsert();
         if (keyword == "UPDATE") return parseUpdate();
         if (keyword == "DELETE") return parseDelete();
+        if (keyword == "CREATE") return parseCreateTable();
         if (keyword == "COLUMN") return parseColumn();
         if (keyword == "DESCRIBE") return parseDescribe();
         throw SqlError(std::format("unknown command \"{}\"", peek().text));
@@ -365,6 +367,44 @@ private:
             fail("WHERE (DELETE always needs a condition, e.g. WHERE ID = 3)");
         }
         stmt.where = parseCondition();
+        expectEnd();
+        return stmt;
+    }
+
+    /// @brief Parses `CREATE TABLE <table> (<col> <type>(<width>), ...)`, where `<type>` is CHAR or NUMBER.
+    /// @return The CreateTableStmt.
+    /// @throws SqlError On a syntax error, an unknown type, or a width that is not a positive integer.
+    CreateTableStmt parseCreateTable()
+    {
+        expectKeyword("CREATE");
+        expectKeyword("TABLE");
+        CreateTableStmt stmt;
+        stmt.table = expectWord("a table name");
+        expectSymbol("(");
+        do {
+            ColumnDefinition column;
+            column.name = expectWord("a column name");
+            const std::string type = toUpper(expectWord("a type (CHAR or NUMBER)"));
+            if (type == "CHAR") {
+                column.type = "S1";
+            } else if (type == "NUMBER") {
+                column.type = "N1";
+            } else {
+                throw SqlError(std::format("unknown type \"{}\" for column {}: use CHAR(<width>) or NUMBER(<width>)",
+                                           type, column.name));
+            }
+            expectSymbol("(");
+            const std::string width = expectWord("a width");
+            auto value = parseInteger(width);
+            if (!value || *value < 1) {
+                throw SqlError(std::format("invalid width \"{}\" for column {}: expected a positive number",
+                                           width, column.name));
+            }
+            column.width = static_cast<std::size_t>(*value);
+            expectSymbol(")");
+            stmt.columns.push_back(std::move(column));
+        } while (acceptSymbol(","));
+        expectSymbol(")");
         expectEnd();
         return stmt;
     }

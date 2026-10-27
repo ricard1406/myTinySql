@@ -1,9 +1,8 @@
 /// @file Output.hpp
-/// @brief Turning statement results into console text or the HTML page.
+/// @brief Turning statement results into console text or JSON for the browser page.
 
 #pragma once
 
-#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -19,15 +18,21 @@ namespace tinysql {
 ///         a message, or an error; empty for a silent result.
 std::string renderText(const StatementResult& result);
 
-/// @brief Builds the full HTML page of the browser server.
+/// @brief Builds the JSON answer of `POST /api/sql`: one object per statement that has something to show.
 ///
-/// The page has tools for the tables (show, describe, search, add a row), a box to type SQL into,
-/// and one table per statement, with Edit and Delete buttons on each row that has an ID.
-/// @param results The results to show, in order.
-/// @param sql What the browser sent, or `std::nullopt` on a first visit (the box then starts with an example).
-/// @param tables The tables for the tools; may be empty.
-/// @return The complete page, from `<!doctype html>` to `</html>`.
-std::string renderHtml(const std::vector<StatementResult>& results, const std::optional<std::string>& sql,
-                       const std::vector<TableSchema>& tables);
+/// Example: `{"results":[{"sql":"DELETE FROM EMPLOY WHERE ID = 3","ok":true,"message":"1 row deleted from EMPLOY",
+/// "table":"EMPLOY"}]}`. A SELECT or DESCRIBE also has `"columns"` (name, width in the data file, and whether
+/// the browser may edit the cell), `"rows"` (arrays of strings) and `"idColumn"` (index of the ID, or `null`).
+/// @param results The results of a script, in order; silent ones (COLUMN, comments) are left out.
+/// @return The JSON text.
+std::string renderJson(const std::vector<StatementResult>& results);
+
+/// @brief Builds the JSON answer of `GET /api/tables`: every table with its columns.
+///
+/// Example: `{"tables":[{"name":"EMPLOY","readOnly":false,"autoId":true,"columns":[{"name":"ID","width":10},...]}]}`.
+/// `readOnly` is true for SYSTEM_TABLE, which the page must not change.
+/// @param tables The tables, from Catalog::tables().
+/// @return The JSON text.
+std::string renderTablesJson(const std::vector<TableSchema>& tables);
 
 }  // namespace tinysql

@@ -67,7 +67,7 @@ This creates the program `./myTinySql`. Object files go to `build/`.
 make test
 ```
 
-Six test scripts run on a copy of the sample tables. Each line must say `PASS`.
+Seven test scripts run on a copy of the sample tables. Each line must say `PASS`.
 
 ## 5. Run it
 
@@ -91,7 +91,7 @@ Always run the program from the project folder: it reads its tables from `data/`
 ./myTinySql --http
 ```
 
-Then open http://localhost:8080. The page has buttons to show, add, edit and delete rows. Stop the server with Ctrl+C.
+Then open http://localhost:8080. The page lists the tables on the left; you can search, add, edit and delete rows, create new tables, and run any SQL in the console at the bottom. Stop the server with Ctrl+C.
 
 All options:
 
@@ -113,6 +113,7 @@ Then open `build/doxygen/html/index.html` in a browser. The same pages are onlin
 | --- | --- |
 | `fatal error: format: No such file or directory` while building | The compiler is too old. Install g++ 13 or newer and build with `make CXX=g++-13`. |
 | `data directory 'data' not found` | The program was started outside the project folder. `cd` into it, or pass `--data=/path/to/myTinySql/data`. |
+| `web page 'web/index.html' not found` | The program was started outside the project folder, so the page's files in `web/` were not found. `cd` into it, or pass `--web=/path/to/myTinySql/web`. |
 | `bind to port 8080: Address already in use` | Another program (or another myTinySql) already uses port 8080. Stop it, or choose another port: `./myTinySql --http --port=8081`. |
 | The browser page does not load from another computer | The server listens on all network interfaces, but a firewall may block port 8080. Use `--allow=192.168.` to accept only your home network. |
 

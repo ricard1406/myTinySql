@@ -1,5 +1,5 @@
 /// @file Server.cpp
-/// @brief The HTTP server: sockets, one thread per connection, and request parsing.
+/// @brief The HTTP server: the page's files, a small JSON API, and one thread per connection.
 
 #include "Server.hpp"
 
@@ -10,10 +10,12 @@
 
 #include <algorithm>
 #include <cerrno>
-#include <charconv>
+#include <cctype>
 #include <format>
+#include <fstream>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <system_error>
 #include <thread>
 #include <utility>
@@ -27,7 +29,7 @@ namespace tinysql {
 
 namespace {
 
-/// @brief The largest request read, in bytes; the rest is ignored.
+/// @brief The largest request read (headers and body), in bytes; the rest is ignored.
 constexpr std::size_t kMaxRequestSize = 64 * 1024;
 
 /// @brief How long a connection may stay silent before it is closed, in seconds.
@@ -79,21 +81,73 @@ private:
     throw std::system_error(errno, std::generic_category(), std::string(what));
 }
 
-/// @brief Reads an HTTP request's request line and headers.
-/// @param fd The connection.
-/// @return Everything up to the blank line after the headers (at most kMaxRequestSize bytes);
-///         empty if the client sent nothing before the idle timeout.
-std::string readRequest(int fd)
+/// @brief One HTTP request, split into the parts the server uses.
+struct Request {
+    std::string method;  ///< E.g. `GET` or `POST`; empty if the request could not be read.
+    std::string path;    ///< E.g. `/api/sql`; any `?query` part is removed.
+    std::string body;    ///< The body of a POST (the SQL for `/api/sql`); empty for a GET.
+};
+
+/// @brief Finds a header's value in the raw request, ignoring the case of its name.
+/// @param head The request line and headers.
+/// @param name The header name, e.g. "content-length".
+/// @return The value without surrounding spaces, or an empty view if the header is missing.
+std::string_view headerValue(std::string_view head, std::string_view name)
 {
-    std::string request;
+    std::size_t lineStart = head.find("\r\n");
+    while (lineStart != std::string_view::npos && lineStart + 2 < head.size()) {
+        lineStart += 2;
+        const std::size_t lineEnd = head.find("\r\n", lineStart);
+        const std::string_view line = head.substr(lineStart, lineEnd - lineStart);
+        const std::size_t colon = line.find(':');
+        if (colon != std::string_view::npos && equalsIgnoreCase(trim(line.substr(0, colon)), name)) {
+            return trim(line.substr(colon + 1));
+        }
+        lineStart = lineEnd;
+    }
+    return {};
+}
+
+/// @brief Reads one HTTP request: the request line, the headers and, if there is one, the body.
+/// @param fd The connection.
+/// @return The request. Its method is empty if the client sent nothing before the idle timeout,
+///         and the body is cut at kMaxRequestSize bytes.
+Request readRequest(int fd)
+{
+    std::string raw;
     char buffer[4096];
-    while (request.size() < kMaxRequestSize && request.find("\r\n\r\n") == std::string::npos) {
+    std::size_t headEnd = std::string::npos;
+    std::size_t bodyLength = 0;
+    while (raw.size() < kMaxRequestSize) {
+        if (headEnd == std::string::npos && (headEnd = raw.find("\r\n\r\n")) != std::string::npos) {
+            // The headers are complete: from now on, read until the body has Content-Length bytes.
+            bodyLength = parseInteger(headerValue(std::string_view(raw).substr(0, headEnd), "content-length")).value_or(0);
+        }
+        if (headEnd != std::string::npos && raw.size() >= headEnd + 4 + bodyLength) {
+            break;
+        }
         const ssize_t n = ::recv(fd, buffer, sizeof buffer, 0);
         if (n <= 0) {
             break;
         }
-        request.append(buffer, static_cast<std::size_t>(n));
+        raw.append(buffer, static_cast<std::size_t>(n));
     }
+
+    Request request;
+    if (headEnd == std::string::npos) {
+        return request;  // nothing, or not a complete request
+    }
+    // Request line: "POST /api/sql HTTP/1.1"
+    const std::string_view line = std::string_view(raw).substr(0, raw.find("\r\n"));
+    const std::size_t space1 = line.find(' ');
+    const std::size_t space2 = line.find(' ', space1 + 1);
+    if (space1 == std::string_view::npos || space2 == std::string_view::npos) {
+        return request;
+    }
+    request.method = std::string(line.substr(0, space1));
+    const std::string_view target = line.substr(space1 + 1, space2 - space1 - 1);
+    request.path = std::string(target.substr(0, target.find('?')));
+    request.body = raw.substr(headEnd + 4, bodyLength);
     return request;
 }
 
@@ -111,28 +165,97 @@ void sendAll(int fd, std::string_view data)
     }
 }
 
-/// @brief Builds a complete HTTP response with an HTML body.
+/// @brief Builds a complete HTTP response.
 /// @param status The status line's code and text, e.g. "200 OK".
-/// @param body The HTML.
-/// @return The response, headers included.
-std::string httpResponse(std::string_view status, std::string_view body)
+/// @param contentType The type of the body, e.g. "application/json".
+/// @param body The body.
+/// @return The response, headers included. `no-cache` makes the browser ask again each time,
+///         so a change to a file in `web/` shows up on the next reload.
+std::string httpResponse(std::string_view status, std::string_view contentType, std::string_view body)
 {
-    return std::format("HTTP/1.1 {}\r\nContent-Type: text/html; charset=utf-8\r\n"
-                       "Content-Length: {}\r\nConnection: close\r\n\r\n{}",
-                       status, body.size(), body);
+    return std::format("HTTP/1.1 {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n"
+                       "Cache-Control: no-cache\r\nConnection: close\r\n\r\n{}",
+                       status, contentType, body.size(), body);
 }
 
-/// @brief Extracts the target of a GET request.
-/// @param request The raw request.
-/// @return For `GET /path?query HTTP/1.1`, the text `/path?query`; empty if the request is not a GET.
-std::string_view requestTarget(std::string_view request)
+/// @brief Builds a JSON error answer, e.g. `{"error":"Not found"}`.
+/// @param status The status line's code and text, e.g. "404 Not Found".
+/// @param message The error message.
+/// @return The response.
+std::string errorResponse(std::string_view status, std::string_view message)
 {
-    const std::string_view line = request.substr(0, request.find("\r\n"));
-    if (!line.starts_with("GET ")) {
-        return {};
+    return httpResponse(status, "application/json", std::format("{{\"error\":\"{}\"}}", message));
+}
+
+/// @brief The content type of a file of the page, from its extension.
+/// @param name The file name, e.g. "app.js".
+/// @return The type to send in the Content-Type header.
+std::string_view contentTypeFor(std::string_view name)
+{
+    if (name.ends_with(".html")) return "text/html; charset=utf-8";
+    if (name.ends_with(".css")) return "text/css; charset=utf-8";
+    if (name.ends_with(".js")) return "text/javascript; charset=utf-8";
+    if (name.ends_with(".svg")) return "image/svg+xml";
+    if (name.ends_with(".ico")) return "image/x-icon";
+    return "application/octet-stream";
+}
+
+/// @brief Tells whether a requested file name is safe to serve from the `web/` directory.
+/// @param name The name, without the leading `/`.
+/// @return True for plain names such as `app.js`: letters, digits, `.`, `-` and `_`, not starting with `.`.
+///         This rules out `..` and `/`, so no request can reach a file outside `web/`.
+bool isSafeFileName(std::string_view name)
+{
+    return !name.empty() && name.front() != '.' && std::ranges::all_of(name, [](unsigned char c) {
+        return std::isalnum(c) || c == '.' || c == '-' || c == '_';
+    });
+}
+
+/// @brief Serves one file of the page from the `web/` directory.
+/// @param config The server settings.
+/// @param name The file name; `index.html` for the page itself.
+/// @return The response: the file, or 404 if the name is not safe or the file does not exist.
+std::string serveFile(const ServerConfig& config, std::string_view name)
+{
+    if (!isSafeFileName(name)) {
+        return errorResponse("404 Not Found", "Not found");
     }
-    std::string_view target = line.substr(4);
-    return target.substr(0, target.find(' '));
+    std::ifstream in(config.webDir / name, std::ios::binary);
+    if (!in) {
+        return errorResponse("404 Not Found", "Not found");
+    }
+    std::stringstream content;
+    content << in.rdbuf();
+    return httpResponse("200 OK", contentTypeFor(name), content.str());
+}
+
+/// @brief Runs the SQL of a `POST /api/sql` request, logs it, and builds the JSON answer.
+///
+/// Call it only while holding workMutex.
+/// @param config The server settings.
+/// @param sql The statements, as sent in the request body.
+/// @return The response.
+std::string runSql(const ServerConfig& config, std::string_view sql)
+{
+    Session session(config.dataDir);
+    const auto results = session.executeScript(sql);
+    for (const StatementResult& result : results) {
+        std::cout << renderText(result);
+    }
+    std::cout << std::flush;
+    return httpResponse("200 OK", "application/json", renderJson(results));
+}
+
+/// @brief Builds the JSON answer of `GET /api/tables`. Call it only while holding workMutex.
+/// @param config The server settings.
+/// @return The response, or a 500 error if SYSTEM_TABLE cannot be read.
+std::string listTables(const ServerConfig& config)
+{
+    try {
+        return httpResponse("200 OK", "application/json", renderTablesJson(Catalog::load(config.dataDir).tables()));
+    } catch (const SqlError& e) {
+        return errorResponse("500 Internal Server Error", "cannot read the table catalogue");
+    }
 }
 
 /// @brief Formats a client's IPv4 address.
@@ -145,124 +268,46 @@ std::string clientAddress(const sockaddr_in& address)
     return text;
 }
 
-/// @brief Runs the SQL of one request, logs it, and builds the page to send back.
+/// @brief Serves one connection: reads the request, answers it, and closes.
 ///
-/// Call it only while holding workMutex.
-/// @param config The server settings.
-/// @param request The raw request.
-/// @param client The client's address, for the log.
-/// @param target The request target, for the log.
-/// @return The HTML page.
-std::string runRequest(const ServerConfig& config, const std::string& request, const std::string& client,
-                       std::string_view target);
-
-/// @brief Serves one connection: reads the request, runs it, and sends the answer.
+/// The routes:
+/// - `GET /` and `GET /<file>`: the page, from the `web/` directory;
+/// - `GET /api/tables`: the tables and their columns, as JSON;
+/// - `POST /api/sql`: runs the SQL in the body, answers with the results as JSON.
 ///
-/// A connection that sends nothing is closed without an answer; a non-GET request gets 405,
-/// and any path but `/` gets 404.
+/// A connection that sends nothing is closed without an answer; a POST elsewhere gets 404, other methods 405.
 /// @param config The server settings.
 /// @param fd The connection.
 /// @param client The client's address, for the log.
 void handleClient(const ServerConfig& config, int fd, const std::string& client)
 {
-    const std::string request = readRequest(fd);
-    if (trim(request).empty()) {
+    const Request request = readRequest(fd);
+    if (request.method.empty()) {
         // An idle (preconnected) connection that never sent a request: close it without
         // answering. Had we answered, the browser could later read that answer as the reply
         // to the request it sends on this connection.
         return;
     }
 
-    const std::string_view target = requestTarget(request);
-    if (target.empty()) {
-        sendAll(fd, httpResponse("405 Method Not Allowed", "<p>Only GET requests are supported.</p>"));
-        return;
+    std::string response;
+    if (request.method == "GET" && request.path == "/api/tables") {
+        const std::scoped_lock lock(workMutex);
+        response = listTables(config);
+    } else if (request.method == "POST" && request.path == "/api/sql") {
+        const std::scoped_lock lock(workMutex);  // one request at a time runs SQL
+        std::cout << std::format("[{}] POST /api/sql\n", client);
+        response = runSql(config, request.body);
+    } else if (request.method == "GET") {
+        response = serveFile(config, request.path == "/" ? "index.html" : std::string_view(request.path).substr(1));
+    } else if (request.method == "POST") {
+        response = errorResponse("404 Not Found", "Not found");
+    } else {
+        response = errorResponse("405 Method Not Allowed", "Only GET and POST are supported");
     }
-    if (target.substr(0, target.find('?')) != "/") {
-        sendAll(fd, httpResponse("404 Not Found", "<p>Not found.</p>"));
-        return;
-    }
-
-    std::string body;
-    {
-        const std::scoped_lock lock(workMutex);  // one request at a time from here on
-        body = runRequest(config, request, client, target);
-    }  // the lock is released here, before the (possibly slow) send
-    sendAll(fd, httpResponse("200 OK", body));
-}
-
-std::string runRequest(const ServerConfig& config, const std::string& request, const std::string& client,
-                       std::string_view target)
-{
-    std::cout << std::format("[{}] GET {}\n", client, target);
-
-    const std::optional<std::string> sql = sqlFromRequest(request);
-    Session session(config.dataDir);
-    const auto results = sql ? session.executeScript(*sql) : std::vector<StatementResult>{};
-    for (const StatementResult& result : results) {
-        std::cout << renderText(result);
-    }
-    std::cout << std::flush;
-
-    // The table list feeds the page's tools; without a readable catalogue the page simply has none.
-    std::vector<TableSchema> tables;
-    try {
-        tables = Catalog::load(config.dataDir).tables();
-    } catch (const SqlError&) {
-    }
-    return renderHtml(results, sql, tables);
+    sendAll(fd, response);
 }
 
 }  // namespace
-
-std::string urlDecode(std::string_view text)
-{
-    std::string result;
-    result.reserve(text.size());
-    for (std::size_t i = 0; i < text.size(); ++i) {
-        const char c = text[i];
-        if (c == '+') {
-            result += ' ';
-        } else if (c == '%' && i + 2 < text.size()) {
-            unsigned value = 0;
-            const char* begin = text.data() + i + 1;
-            auto [ptr, ec] = std::from_chars(begin, begin + 2, value, 16);
-            if (ec == std::errc{} && ptr == begin + 2) {
-                result += static_cast<char>(value);
-                i += 2;
-            } else {
-                result += c;
-            }
-        } else {
-            result += c;
-        }
-    }
-    return result;
-}
-
-std::optional<std::string> sqlFromRequest(std::string_view request)
-{
-    const std::string_view target = requestTarget(request);
-    if (target.empty()) {
-        return std::nullopt;
-    }
-
-    // GET /?subject=SELECT+*+FROM+EMPLOY%3B...
-    const std::size_t question = target.find('?');
-    if (question == std::string_view::npos) {
-        return std::nullopt;
-    }
-    std::string_view query = target.substr(question + 1);
-    while (!query.empty()) {
-        const std::size_t amp = query.find('&');
-        const std::string_view pair = query.substr(0, amp);
-        if (pair.starts_with("subject=")) {
-            return urlDecode(pair.substr(8));
-        }
-        query = amp == std::string_view::npos ? std::string_view{} : query.substr(amp + 1);
-    }
-    return std::nullopt;
-}
 
 void runServer(const ServerConfig& config)
 {

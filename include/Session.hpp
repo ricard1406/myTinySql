@@ -82,6 +82,13 @@ private:
     /// @throws SqlError On an unknown column or an attempt to change SYSTEM_TABLE.
     StatementResult run(const DeleteStmt& stmt);
 
+    /// @brief Runs a CREATE TABLE: adds one SYSTEM_TABLE line per column and an empty data file.
+    /// @param stmt The statement.
+    /// @return A message with the number of columns and the row length.
+    /// @throws SqlError On an invalid or duplicate name, an ID column that is not the first one,
+    ///         a row too long for SYSTEM_TABLE, or a data file that already exists.
+    StatementResult run(const CreateTableStmt& stmt);
+
     /// @brief Remembers a column's display width for the rest of the session.
     /// @param stmt The statement.
     /// @return A silent result.

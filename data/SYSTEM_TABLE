@@ -24,3 +24,7 @@
 24        4    CAL_WEEKLY          CALORIES            S1   20   24   5    35   
 25        5    CAL_WEEKLY          FAT                 S1   25   29   5    35   
 26        6    CAL_WEEKLY          PROTEIN             S1   30   34   5    35   
+27        1    VINI-ITALY          ID                  N1   0    9    10   180  
+28        2    VINI-ITALY          REGIONE             S1   10   49   40   180  
+29        3    VINI-ITALY          VINO                S1   50   149  100  180  
+30        4    VINI-ITALY          TIPO                S1   150  179  30   180  

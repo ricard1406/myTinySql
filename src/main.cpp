@@ -35,6 +35,7 @@ constexpr std::string_view kUsage = R"(Usage: myTinySql [options]
   --allow=LIST     comma-separated client IP prefixes the server accepts,
                    e.g. 127.,192.168. (default: everyone)
   --data=DIR       directory with SYSTEM_TABLE and the *_DATA files (default: data)
+  --web=DIR        directory with the browser page's files (default: web)
   --help           show this help
 
 With no --sqlfile and no --http, statements are read from standard input.
@@ -47,6 +48,7 @@ struct Options {
     std::optional<std::uint16_t> port;              ///< `--port`: the server port, if not the default.
     std::optional<std::vector<std::string>> allow;  ///< `--allow`: client IP prefixes, if given.
     std::filesystem::path dataDir = "data";         ///< `--data`: the directory holding the tables.
+    std::filesystem::path webDir = "web";           ///< `--web`: the directory holding the browser page.
 };
 
 /// @brief Splits a comma-separated list.
@@ -110,6 +112,8 @@ Options parseOptions(int argc, char** argv)
             options.allow = splitList(requireValue());
         } else if (name == "--data") {
             options.dataDir = std::string(requireValue());
+        } else if (name == "--web") {
+            options.webDir = std::string(requireValue());
         } else {
             throw std::invalid_argument(std::format("unknown option '{}'", arg));
         }
@@ -170,9 +174,15 @@ int main(int argc, char** argv)
         }
 
         if (options.http) {
+            if (!std::filesystem::is_regular_file(options.webDir / "index.html")) {
+                std::cerr << std::format("web page '{}' not found (use --web=DIR)\n",
+                                         (options.webDir / "index.html").string());
+                return 2;
+            }
             ServerConfig config{
                 .port = options.port.value_or(8080),
                 .dataDir = options.dataDir,
+                .webDir = options.webDir,
                 .allowedClients = options.allow.value_or(std::vector<std::string>{}),
             };
             runServer(config);

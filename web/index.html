@@ -1,0 +1,183 @@
+<!doctype html>
+<!--
+  myTinySQL - the browser page.
+
+  This file holds only the structure of the page. The look is in style.css, and the behaviour
+  (talking to the server, filling the tables, editing rows) is in app.js.
+  The server sends these files from the web/ folder; you can edit them and just reload the page.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>myTinySQL</title>
+  <link rel="icon" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="favicon.svg" alt="" width="28" height="28">
+      <span class="brand-name">myTinySQL</span>
+      <span class="brand-note">a tiny SQL interpreter over fixed-width text files</span>
+    </div>
+    <div class="topbar-right">
+      <a class="topbar-link" href="https://ricard1406.github.io/myTinySql/" target="_blank" rel="noopener">Code documentation</a>
+      <button id="settings-button" class="button" type="button" title="Settings">⚙ Settings</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- The list of tables, filled by app.js from GET /api/tables -->
+    <nav class="sidebar" aria-label="Tables">
+      <h2 class="sidebar-title">Tables</h2>
+      <ul id="table-list" class="table-list"></ul>
+      <button id="new-table-button" class="button ghost new-table" type="button">+ New table</button>
+    </nav>
+
+    <main class="content">
+      <!-- The chosen table: its name, a search, an optional "new row" form, and the rows -->
+      <section class="card" id="table-card">
+        <div class="card-head">
+          <div>
+            <h1 id="table-title">Choose a table</h1>
+            <p id="table-subtitle" class="muted"></p>
+          </div>
+          <button id="new-row-button" class="button primary" type="button" hidden>+ New row</button>
+        </div>
+
+        <form id="search-form" class="toolbar" hidden>
+          <label class="field">
+            <span>Search in</span>
+            <select id="search-column"></select>
+          </label>
+          <label class="field grow">
+            <span>Text</span>
+            <input id="search-text" type="search" placeholder="text or part of it, e.g. fran">
+          </label>
+          <button class="button" type="submit">Search</button>
+          <button id="search-clear" class="button ghost" type="button">Show all</button>
+        </form>
+
+        <form id="new-row-form" class="new-row" hidden>
+          <h3>New row</h3>
+          <div id="new-row-fields" class="new-row-fields"></div>
+          <div class="actions">
+            <button class="button primary" type="submit">Add row</button>
+            <button id="new-row-cancel" class="button ghost" type="button">Cancel</button>
+            <span id="new-row-hint" class="muted small"></span>
+          </div>
+        </form>
+
+        <!-- The SQL that the last action sent, and what the server answered -->
+        <div id="last-sql" class="last-sql" hidden>
+          <code id="last-sql-text"></code>
+          <span id="last-sql-result" class="badge"></span>
+        </div>
+
+        <div class="grid-wrap">
+          <table id="grid" class="grid"></table>
+          <p id="grid-empty" class="empty" hidden>No rows.</p>
+        </div>
+      </section>
+
+      <!-- Any SQL: the results appear below, newest first -->
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2>SQL console</h2>
+            <p class="muted">One statement per line, or several separated by <code>;</code>. Run with the button or Ctrl+Enter.</p>
+          </div>
+        </div>
+        <form id="console-form" class="console">
+          <textarea id="console-input" rows="4" spellcheck="false">SELECT * FROM EMPLOY WHERE PERIODO = Barocco</textarea>
+          <div class="actions">
+            <button class="button primary" type="submit">Run</button>
+            <button id="console-clear" class="button ghost" type="button">Clear results</button>
+          </div>
+        </form>
+        <div id="console-results" class="console-results"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Asks before deleting a row -->
+  <dialog id="confirm-dialog" class="dialog">
+    <form method="dialog">
+      <h3>Delete this row?</h3>
+      <p id="confirm-text" class="muted"></p>
+      <div class="actions end">
+        <button class="button ghost" value="cancel">Cancel</button>
+        <button class="button danger" value="ok">Delete</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- New table: a name and a list of columns; app.js builds the CREATE TABLE and shows it while you type -->
+  <dialog id="new-table-dialog" class="dialog wide">
+    <form id="new-table-form" method="dialog">
+      <h3>New table</h3>
+      <p class="muted small">Every column takes a fixed number of characters in each row.
+        Names: letters, digits, <code>_</code> and <code>-</code>, starting with a letter, up to 20 characters;
+        they are stored in upper case.</p>
+
+      <label class="field">
+        <span>Table name</span>
+        <input id="new-table-name" required maxlength="20" pattern="[A-Za-z][A-Za-z0-9_\-]*"
+               title="Letters, digits, _ and -, starting with a letter" placeholder="e.g. CARS" autocomplete="off">
+      </label>
+
+      <label class="check">
+        <input id="new-table-id" type="checkbox" checked>
+        <span>Number the rows automatically (adds an <code>ID</code> column first, needed for Edit and Delete)</span>
+      </label>
+
+      <div class="column-list">
+        <div class="column-row column-head muted small">
+          <span>Column name</span><span>Type</span><span>Width</span><span></span>
+        </div>
+        <div id="new-table-columns"></div>
+      </div>
+      <button id="new-table-add-column" class="button small" type="button">+ Add column</button>
+
+      <div class="last-sql sql-preview">
+        <code id="new-table-sql"></code>
+        <span id="new-table-length" class="muted small"></span>
+      </div>
+      <p id="new-table-error" class="form-error" hidden></p>
+
+      <div class="actions end">
+        <button id="new-table-cancel" class="button ghost" type="button">Cancel</button>
+        <button class="button primary" type="submit">Create table</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Settings: each option is one <fieldset>; app.js applies a change at once and remembers it -->
+  <dialog id="settings-dialog" class="dialog">
+    <form method="dialog">
+      <h3>Settings</h3>
+      <p class="muted small">Your choices are saved in this browser.</p>
+
+      <fieldset class="setting">
+        <legend>Text size</legend>
+        <div class="segmented">
+          <label><input type="radio" name="text-size" value="small"><span>Small</span></label>
+          <label><input type="radio" name="text-size" value="normal"><span>Normal</span></label>
+          <label><input type="radio" name="text-size" value="large"><span>Large</span></label>
+          <label><input type="radio" name="text-size" value="extra-large"><span>Extra large</span></label>
+        </div>
+        <p class="muted small sample">Changes the text, the buttons and the spacing of the whole page.</p>
+      </fieldset>
+
+      <div class="actions end">
+        <button class="button primary" value="close">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Short messages that disappear by themselves -->
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+</body>
+</html>

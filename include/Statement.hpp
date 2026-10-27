@@ -69,6 +69,19 @@ struct ColumnFormatStmt {
     std::size_t width;   ///< Display width in characters.
 };
 
+/// @brief One column of a CREATE TABLE: `<name> CHAR(<width>)` or `<name> NUMBER(<width>)`.
+struct ColumnDefinition {
+    std::string name;   ///< The column name.
+    std::string type;   ///< `S1` for CHAR, `N1` for NUMBER: the codes SYSTEM_TABLE records.
+    std::size_t width;  ///< Number of characters the column occupies in every row.
+};
+
+/// @brief `CREATE TABLE <table> (<column> <type>(<width>)[, ...])`: adds a table to SYSTEM_TABLE.
+struct CreateTableStmt {
+    std::string table;                      ///< The new table's name.
+    std::vector<ColumnDefinition> columns;  ///< Its columns, in file order.
+};
+
 /// @brief `DESCRIBE` lists the tables; `DESCRIBE <table>` lists that table's columns.
 struct DescribeStmt {
     std::optional<std::string> table;  ///< The table to describe, or empty to list all tables.
@@ -81,7 +94,8 @@ struct CommentStmt {};
 ///
 /// Session::execute() uses `std::visit` to call the matching `run()` overload.
 using Statement =
-    std::variant<SelectStmt, InsertStmt, UpdateStmt, DeleteStmt, ColumnFormatStmt, DescribeStmt, CommentStmt>;
+    std::variant<SelectStmt, InsertStmt, UpdateStmt, DeleteStmt, CreateTableStmt, ColumnFormatStmt, DescribeStmt,
+                 CommentStmt>;
 
 /// @brief Parses one statement.
 /// @param sql The text of one statement; a trailing `;` is allowed.

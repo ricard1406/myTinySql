@@ -45,6 +45,12 @@ public:
     ///         or the file cannot be written.
     void append(const Row& values) const;
 
+    /// @brief Adds several rows at the end of the file, in one write.
+    /// @param rows The rows; each has one value per column, ID included.
+    /// @throws SqlError As append(); every row is checked before the file is touched,
+    ///         so a bad row adds nothing.
+    void appendRows(const std::vector<Row>& rows) const;
+
     /// @brief Removes the rows that match a test.
     /// @param shouldRemove Called for every row; returns true to remove it.
     /// @return How many rows were removed.

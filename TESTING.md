@@ -11,7 +11,7 @@ command and expected result in this file was run before it was written down.
 | # | Check | Command | Expected | What it shows |
 | --- | --- | --- | --- | --- |
 | 1 | Clean build | `make clean && make` | no warnings | The compiler finds nothing suspicious |
-| 2 | Automated tests | `make test` | 6 × `PASS` | The SQL gives exactly the expected output |
+| 2 | Automated tests | `make test` | 7 × `PASS` | The SQL gives exactly the expected output |
 | 3 | Command line | `echo "..." \| ./myTinySql ...` | rows, errors, exit code | Scripts and error handling work |
 | 4 | Browser server | `curl ...` | 200, 404, 405 | The server answers correctly |
 | 5 | Idle connection | `exec 3<>/dev/tcp/...` | `200 OK` after 6 s | Browsers that "preconnect" are served |
@@ -19,7 +19,7 @@ command and expected result in this file was run before it was written down.
 | 7 | File integrity | `awk` on `data/` | one length per file | Every row has the exact fixed width |
 | 8 | Memory safety | sanitizer build | 0 problems | No memory errors or undefined behaviour |
 | 9 | Documentation | `make doxygen` | no warnings | Every declaration is documented |
-| 10 | Fresh install | `git clone` + `make test` | 6 × `PASS` | The project works from a clean copy |
+| 10 | Fresh install | `git clone` + `make test` | 7 × `PASS` | The project works from a clean copy |
 | 11 | By hand, in a browser | checklist | as described | The web page works for a person |
 | 12 | On GitHub | Actions tab | green check | The online documentation is up to date |
 
@@ -104,6 +104,7 @@ make test
 
 ```text
 tests/run_tests.sh
+PASS create
 PASS delete
 PASS describe
 PASS errors
@@ -114,8 +115,8 @@ PASS update
 
 **How it works:** each `tests/NAME.sql` is a script of statements, and `tests/NAME.expected` is the exact
 output it must produce. `tests/run_tests.sh` runs every script on a fresh copy of `tests/data/` and compares
-the output with `diff`. One different character is enough to fail. Together, the 6 scripts cover SELECT,
-WHERE with every operator and `LIKE`, INSERT, UPDATE, DELETE, DESCRIBE, COLUMN, and the error messages.
+the output with `diff`. One different character is enough to fail. Together, the 7 scripts cover SELECT,
+WHERE with every operator and `LIKE`, INSERT, UPDATE, DELETE, CREATE TABLE, DESCRIBE, COLUMN, and the error messages.
 
 **If a test fails**, the runner prints the difference: lines starting with `-` are what was expected,
 lines starting with `+` are what the program printed instead.
@@ -200,13 +201,16 @@ The terminal prints a line like `[1] 12345`: that is the background job's number
 is normal. When you stop the server at the end of check 6, it prints a line like `[1]+  Terminated` (in
 Italian, `Terminato`): also normal.
 
-Ask it for the page, a file that does not exist, a request that is not GET, and a query:
+Ask it for the page, a file that does not exist, a method it does not support, the list of tables,
+a statement, and a file outside the page's folder:
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:18080/
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:18080/favicon.ico
-curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:18080/
-curl -s 'http://localhost:18080/?subject=DESCRIBE' | grep -o '<p>[0-9]* tables</p>'
+curl -s -o /dev/null -w '%{http_code}\n' -X PUT http://localhost:18080/api/sql
+curl -s -o /dev/null -w '%{http_code} %{content_type}\n' http://localhost:18080/api/tables
+curl -s --data-binary 'DESCRIBE' http://localhost:18080/api/sql | grep -o '"message":"[^"]*"'
+curl -s -o /dev/null -w '%{http_code}\n' --path-as-is http://localhost:18080/../data/SYSTEM_TABLE
 ```
 
 **You should see** (output, don't type it):
@@ -215,10 +219,15 @@ curl -s 'http://localhost:18080/?subject=DESCRIBE' | grep -o '<p>[0-9]* tables</
 200
 404
 405
-<p>4 tables</p>
+200 application/json
+"message":"4 tables"
+404
 ```
 
-`200` means OK, `404` "not found" and `405` "method not allowed". Leave the server running for checks 5 and 6.
+`200` means OK, `404` "not found" and `405` "method not allowed". The page itself is `index.html` from the
+`web/` folder; `/api/tables` and `/api/sql` are the API the page uses, and they answer in JSON. The last
+line tries to read a file outside `web/` (`--path-as-is` makes `curl` send the `..` exactly as typed): the
+server refuses, so nothing outside the page's folder can be read. Leave the server running for checks 5 and 6.
 
 **If `curl` prints `000`:** it could not connect, so no server is running on port 18080. Usually the server
 stopped right after starting. The most common reasons:
@@ -237,7 +246,7 @@ silent connection, checks that other requests are not blocked by it, then uses i
 exec 3<>/dev/tcp/localhost/18080
 curl -s -o /dev/null -w 'other request while idle: %{time_total}s\n' http://localhost:18080/
 sleep 6
-printf 'GET /?subject=DESCRIBE HTTP/1.1\r\nHost: x\r\n\r\n' >&3
+printf 'GET /api/tables HTTP/1.1\r\nHost: x\r\n\r\n' >&3
 head -1 <&3
 exec 3<&-
 ```
@@ -262,7 +271,7 @@ Send 20 INSERTs at the same moment, and wait until all 20 are answered:
 ```bash
 (
     for i in $(seq 1 20); do
-        curl -s -o /dev/null "http://localhost:18080/?subject=INSERT+INTO+COMPANY+VALUES+('Firm+$i',Test,'Via+$i',Roma)" &
+        curl -s -o /dev/null --data-binary "INSERT INTO COMPANY VALUES ('Firm $i',Test,'Via $i',Roma)" http://localhost:18080/api/sql &
     done
     wait
 )
@@ -336,6 +345,7 @@ done
 **You should see** (output, don't type it):
 
 ```text
+tests/create.sql: 0 problems
 tests/delete.sql: 0 problems
 tests/describe.sql: 0 problems
 tests/errors.sql: 0 problems
@@ -375,7 +385,7 @@ make test
 cd "$PROJECT"
 ```
 
-**You should see** `0`, then the same 6 `PASS` lines as in check 2.
+**You should see** `0`, then the same 7 `PASS` lines as in check 2.
 
 **Why this check exists:** a fresh copy has no `build/` folder and nothing left over from earlier work.
 That is exactly how a bug in `make doxygen` was found: it worked on the developer's machine, where
@@ -392,18 +402,24 @@ Start the server on the copy of the tables, then open http://localhost:18080 in 
 
 | Step | Expected |
 | --- | --- |
-| Open the page | The table list shows EMPLOY; the SQL box contains an example query |
-| Click **Run** | A table of 5 rows appears |
-| Choose COMPANY, click **Show rows** | The companies (8, plus the 20 test firms if you ran check 6), each row with **Edit** and **Delete** |
-| Choose EMPLOY; in **Search**, column NOME, type `fran`, click **Search** | The rows whose NOME contains "fran" (Francesco, Franco); `fran` is still in the box |
-| In **Add a row**, fill every field, with an apostrophe in one (`O'Brien`), click **Add row** | "1 row inserted" and the new row, apostrophe included |
-| On that row, click **Edit**, change a value, press **Escape** | The row is unchanged and nothing was sent |
-| Click **Edit** again, change a value with a space (`Reggio Emilia`), press **Enter** | "1 row updated", the new value shown |
+| Open the page | The tables on the left; EMPLOY (or the last table you used) with its rows |
+| Click **COMPANY** on the left | The companies (8, plus the 20 test firms if you ran check 6), each row with **Edit** and **Delete** |
+| Click **SYSTEM_TABLE** | Its rows, with no **+ New row** and no Edit/Delete: the catalogue is read-only |
+| Click **EMPLOY**; in **Search in** keep NOME, type `fran`, click **Search** | The rows whose NOME contains "fran" (Francesco, Franco) |
+| Click **+ New row**, fill every field, with an apostrophe in one (`O'Brien`), click **Add row** | A "1 row inserted" message; the form closes and the new row is the last one, apostrophe included |
+| On that row, click **Edit**, change a value, press **Escape** | The row is unchanged, and the SQL line above the rows still shows the INSERT: nothing was sent |
+| Click **Edit** again, change a value to one with a space (`Reggio Emilia`), press **Enter** | "1 row updated", the new value shown |
 | Click **Delete** on it, then **Cancel** in the dialog | Nothing is deleted |
-| Click **Delete** again, then **OK** | "1 row deleted", the row is gone |
+| Click **Delete** again, then the red **Delete** | "1 row deleted", the row is gone |
+| In the **SQL console**, type `SELECT * FROM COMPANY WHERE TOWN = Roma` and, on a new line, `SELECT FOO FROM COMPANY`; press Ctrl+Enter | Two results: the rows with a green check, and the error in red |
+| Click **+ New table**; name `cars`; first column `model`, Text, 20; click **+ Add column**: `year`, Number, 4 | The SQL under the columns reads `CREATE TABLE CARS (ID NUMBER(10), MODEL CHAR(20), YEAR NUMBER(4))` while you type |
+| Click **Create table** | "table CARS created with 3 columns (row length 34)"; CARS appears on the left, open and empty, with **+ New row** |
+| Click **+ New table** again, name `cars`, any column, **Create table** | The form stays open and shows "table CARS already exists" in red; click **Cancel** |
+| Click **⚙ Settings**, choose **Extra large**, click **Done**, then reload the page | The whole page (text, buttons, spacing) is bigger, and still is after the reload; set it back to **Normal** |
+| Switch your computer to a dark theme (optional) | The page follows it, with dark colours |
 
-Above the results, the page always shows the SQL each button sent: reading it is part of the check.
-Stop the server with Ctrl+C.
+Above the rows, the page always shows the SQL the last action sent and the server's answer: reading it is
+part of the check. Stop the server with Ctrl+C.
 
 ## 12. On GitHub
 
