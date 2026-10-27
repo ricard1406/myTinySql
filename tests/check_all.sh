@@ -5,7 +5,7 @@
 #   OOOPS - SOMETHING IS WRONG   at least one check failed; the log says what it printed
 #
 # Usage:  tests/check_all.sh [--offline]     or:  make check
-#   --offline  skips check 10 (fresh copy from GitHub) and check 12 (GitHub Actions)
+#   --offline  skips check 10 (fresh copy from GitHub) and check 12 (documentation build on GitHub)
 #
 # Like TESTING.md, it works on a temporary copy of tests/data/: your tables in data/ are only read
 # (check 7), never changed. Check 11 needs a person and a browser, so it is only listed.
@@ -230,14 +230,22 @@ check_10() {  # Fresh install: a new copy from GitHub builds without warnings an
 
 check_12() {  # On GitHub: the latest documentation build succeeded
     $offline && { why="--offline"; return 2; }
-    command -v gh > /dev/null || { why="gh is not installed (optional; see the Actions tab on github.com)"; return 2; }
-    local got
-    got=$(gh run list --repo ricard1406/myTinySql --workflow=doxygen.yml --limit 1 \
-        --json status,conclusion -q '.[0].status + " " + .[0].conclusion' 2>&1) \
-        || { echo "$got"; why="gh could not read the runs (not logged in? run: gh auth login)"; return 2; }
-    echo "$got"
-    [[ "$got" == "completed "* ]] || { why="the latest run is still running: try again in a few minutes"; return 2; }
-    same "latest Doxygen documentation run" "completed success" "$got"
+    # The repository is public, so GitHub's API answers without logging in (60 requests an hour).
+    local api="https://api.github.com/repos/ricard1406/myTinySql/actions/workflows/doxygen.yml/runs?per_page=1"
+    local answer status conclusion commit
+    answer=$(curl -s --max-time 20 "$api") || { why="could not reach api.github.com"; return 1; }
+    if grep -q 'rate limit' <<< "$answer"; then
+        why="GitHub answers 60 requests an hour without logging in: try again later"
+        return 2
+    fi
+    status=$(grep -m1 '"status"' <<< "$answer" | sed -E 's/.*: *"?([^",]*)"?,?$/\1/')
+    conclusion=$(grep -m1 '"conclusion"' <<< "$answer" | sed -E 's/.*: *"?([^",]*)"?,?$/\1/')
+    commit=$(grep -m1 '"head_sha"' <<< "$answer" | sed -E 's/.*: *"([0-9a-f]{7}).*/\1/')
+    echo "latest run: status $status, conclusion $conclusion, commit $commit"
+    [[ -n "$status" ]] || { echo "$answer"; why="unexpected answer from api.github.com"; return 1; }
+    [[ "$status" == completed ]] || { why="the latest run is still running: try again in a few minutes"; return 2; }
+    note="documentation of commit $commit"
+    same "latest Doxygen documentation run" "completed success" "$status $conclusion"
 }
 
 # ---------------------------------------------------------------- Main

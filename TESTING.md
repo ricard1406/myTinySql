@@ -31,7 +31,7 @@ myTinySQL: running the checks of TESTING.md (about 2 minutes)
   9  Documentation            ok
  10  Fresh install            ok   the version on GitHub, 8 test scripts
  11  By hand, in a browser    --   by a person: see TESTING.md, check 11
- 12  On GitHub                ok
+ 12  On GitHub                ok   documentation of commit 1a4c9a0
 
 ALL DONE - IT WORKS   (11 checks passed)
 ```
@@ -42,8 +42,8 @@ If a tool is missing, it says which one and how to install it, before running an
 
 - `make check` is `tests/check_all.sh`; `tests/check_all.sh --offline` skips the two checks that need the
   internet (10 and 12).
-- Check 11 needs a person and a browser, so the script only lists it. Check 12 is skipped if `gh` is not
-  installed or not logged in, or while the latest run is still going.
+- Check 11 needs a person and a browser, so the script only lists it. Check 12 is skipped while the
+  latest run on GitHub is still going.
 - Like the checks below, it works on a temporary copy of the tables: `data/` is only read (check 7).
 
 The rest of this guide is the same checks one by one, with what each one shows and why it exists.
@@ -84,10 +84,9 @@ sudo apt install curl git doxygen
 
 | Tool | Used by | Note |
 | --- | --- | --- |
-| `curl` | checks 4, 5, 6 | Sends requests to the server from the terminal; not installed on a fresh Ubuntu |
+| `curl` | checks 4, 5, 6, 12 | Sends requests to the server from the terminal; not installed on a fresh Ubuntu |
 | `git` | check 10 | Downloads a fresh copy of the project |
 | `doxygen` | check 9 | Only for the documentation check |
-| `gh` (GitHub CLI) | check 12 | Optional: the Actions tab on github.com shows the same thing |
 | A web browser | check 11 | E.g. Chromium or Firefox |
 
 To see which tools are missing, run:
@@ -485,20 +484,24 @@ part of the check. Stop the server with Ctrl+C.
 ## 12. On GitHub
 
 After each push to `main`, GitHub rebuilds the documentation site. In the repository's **Actions** tab,
-the latest "Doxygen documentation" run must have a green check. From a terminal:
+the latest "Doxygen documentation" run must have a green check. From a terminal, without logging in
+(the repository is public):
 
 ```bash
-gh run list --repo ricard1406/myTinySql --limit 1
+curl -s "https://api.github.com/repos/ricard1406/myTinySql/actions/workflows/doxygen.yml/runs?per_page=1" | grep -m2 -E '"(status|conclusion)"'
 ```
 
-**You should see** (output, don't type it) a small table whose first row starts with a green check mark:
+**You should see** (output, don't type it):
 
 ```text
-STATUS  TITLE                     WORKFLOW               BRANCH  EVENT  ID           ELAPSED  AGE
-✓       Docs: link TESTING.md...  Doxygen documentation  main    push   40098806...  53s      about 3 minutes ago
+      "status": "completed",
+      "conclusion": "success",
 ```
 
-A red `X` instead of the check mark means the run failed: click it in the Actions tab to see why.
+- `"conclusion": "failure"` means the run failed: open it in the Actions tab to see why.
+- `"status": "in_progress"` or `"queued"` means it is still running: try again in a few minutes.
+- GitHub answers 60 such requests an hour from one computer; above that the answer says
+  `API rate limit exceeded`.
 
 ## Clean up
 
