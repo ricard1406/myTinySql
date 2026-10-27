@@ -1,4 +1,5 @@
-# myTinySQL - build with `make`, run the tests with `make test`, make the HTML docs with `make doxygen`.
+# myTinySQL - build with `make`, run the tests with `make test`, make the HTML docs with `make doxygen`,
+# and run every check of TESTING.md with `make check`.
 
 CXX      ?= g++
 CXXFLAGS ?= -std=c++20 -Wall -Wextra -Wpedantic -O2 -pthread
@@ -20,6 +21,10 @@ build:
 test: myTinySql
 	tests/run_tests.sh
 
+# Every check of TESTING.md, with one verdict at the end (about 2 minutes).
+check:
+	tests/check_all.sh
+
 # HTML documentation from the Doxygen comments, in build/doxygen/html/.
 doxygen:
 	mkdir -p build/doxygen
@@ -29,6 +34,6 @@ doxygen:
 clean:
 	rm -rf build myTinySql
 
-.PHONY: test clean doxygen
+.PHONY: test check clean doxygen
 
 -include $(OBJ:.o=.d)

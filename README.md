@@ -6,7 +6,8 @@ Code documentation (Doxygen): https://ricard1406.github.io/myTinySql/
 
 **Installation:** requirements, build and first run are in [INSTALLATION.md](INSTALLATION.md).
 
-**Testing:** how to check, step by step, that everything works is in [TESTING.md](TESTING.md).
+**Testing:** how to check, step by step, that everything works is in [TESTING.md](TESTING.md);
+`make check` runs all those checks at once.
 
 > **DISCLAIMER: All data in this project is sample data, for testing purposes only.
 > The companies, addresses and other values are fictional or AI generated. Many names in the
@@ -17,6 +18,7 @@ Code documentation (Doxygen): https://ricard1406.github.io/myTinySql/
 ```bash
 make                                        # builds ./myTinySql (needs g++ 13 or newer)
 make test                                   # runs tests/*.sql and compares with tests/*.expected
+make check                                  # every check of TESTING.md: ALL DONE - IT WORKS, or OOOPS
 make doxygen                                # HTML docs of the code in build/doxygen/html/ (needs doxygen)
 ./myTinySql --sqlfile=examples/select.sql   # run a script
 ./myTinySql                                 # type statements interactively

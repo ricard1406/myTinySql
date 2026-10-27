@@ -69,6 +69,10 @@ make test
 
 Eight test scripts run on a copy of the sample tables. Each line must say `PASS`.
 
+For the complete check (build, tests, server, memory safety, documentation, a fresh copy from GitHub),
+run `make check` (about 2 minutes). It needs `curl`, `git` and `doxygen`, and ends with
+`ALL DONE - IT WORKS`; see [TESTING.md](TESTING.md).
+
 ## 5. Run it
 
 Always run the program from the project folder: it reads its tables from `data/` in the current folder (or use `--data=DIR`).

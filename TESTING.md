@@ -6,6 +6,48 @@ copy, followed by the result you should see. If you get the same result, you hav
 These are the same checks used while developing the project (on Ubuntu 26.04, with g++ 15.2), and every
 command and expected result in this file was run before it was written down.
 
+## All checks at once
+
+One command runs checks 1 to 10 and 12, compares every result with the one this guide expects, and ends
+with a single verdict:
+
+```bash
+make check
+```
+
+**You should see** (output, don't type it) one line per check, then the verdict:
+
+```text
+myTinySQL: running the checks of TESTING.md (about 2 minutes)
+
+  1  Clean build              ok
+  2  Automated tests          ok   8 test scripts
+  3  Command line             ok
+  4  Browser server           ok
+  5  Idle connection          ok   other request answered in 0.000491s
+  6  Parallel writes          ok
+  7  File integrity           ok   5 files
+  8  Memory safety            ok
+  9  Documentation            ok
+ 10  Fresh install            ok   the version on GitHub, 8 test scripts
+ 11  By hand, in a browser    --   by a person: see TESTING.md, check 11
+ 12  On GitHub                ok
+
+ALL DONE - IT WORKS   (11 checks passed)
+```
+
+If something is wrong, the verdict is `OOOPS - SOMETHING IS WRONG`, the failed checks say why, and the
+script prints where its log is: everything each check printed, with the expected and actual results.
+If a tool is missing, it says which one and how to install it, before running anything.
+
+- `make check` is `tests/check_all.sh`; `tests/check_all.sh --offline` skips the two checks that need the
+  internet (10 and 12).
+- Check 11 needs a person and a browser, so the script only lists it. Check 12 is skipped if `gh` is not
+  installed or not logged in, or while the latest run is still going.
+- Like the checks below, it works on a temporary copy of the tables: `data/` is only read (check 7).
+
+The rest of this guide is the same checks one by one, with what each one shows and why it exists.
+
 ## Summary
 
 | # | Check | Command | Expected | What it shows |
@@ -47,6 +89,15 @@ sudo apt install curl git doxygen
 | `doxygen` | check 9 | Only for the documentation check |
 | `gh` (GitHub CLI) | check 12 | Optional: the Actions tab on github.com shows the same thing |
 | A web browser | check 11 | E.g. Chromium or Firefox |
+
+To see which tools are missing, run:
+
+```bash
+for tool in g++ make curl git doxygen; do command -v $tool > /dev/null || echo "missing: $tool"; done; echo "tool check done"
+```
+
+**You should see** (output, don't type it) only `tool check done`. Each `missing:` line names a tool to
+install with `sudo apt install` (`g++` and `make` come with `build-essential`).
 
 ## Before you start: work on a copy
 
@@ -170,15 +221,18 @@ statement ends with exit code 1, so other programs can detect it.
 
 ## 4. Browser server
 
-First make sure the copy of the tables from "Before you start" is there, in this terminal window:
+First make sure that `curl` is installed, and that the copy of the tables from "Before you start" is there,
+in this terminal window:
 
 ```bash
+command -v curl > /dev/null && echo "curl found" || echo "curl is missing: sudo apt install curl"
 test -d "$TEST_DIR/data" && echo "test copy found" || echo "TEST_DIR is empty: run the 'Before you start' lines in this window"
 ```
 
 **You should see** (output, don't type it):
 
 ```text
+curl found
 test copy found
 ```
 
@@ -325,7 +379,11 @@ CAL_WEEKLY_DATA: 35
 COMPANY_DATA: 250
 EMPLOY_DATA: 290
 SYSTEM_TABLE: 80
+VINI-ITALY_DATA: 180
 ```
+
+(Your list may differ if you created other tables: what matters is one length per file. `make check`
+also compares each length with the row length in `SYSTEM_TABLE`.)
 
 `LC_ALL=C` makes `awk` count bytes, as the program does: an accented letter such as `ò` is 2 bytes.
 
@@ -470,5 +528,6 @@ rm -rf "$TEST_DIR"
 | `make doxygen` failed on a clean machine (GitHub) | Check 12, then check 10 | `make doxygen` creates its output folder first |
 | A plain `wait` in a test script waited forever for the server | Writing check 6 of this guide | Run the 20 requests in a subshell, whose `wait` ignores the server |
 | On a fresh Ubuntu: `curl` missing, and an output box (`0`) typed as a command | A user following this guide | "What you need" section; output boxes labelled "You should see" |
+| On a fresh Ubuntu 26.04: `curl` still missing at check 4 | A user following this guide | A one-line tool check in "What you need", and a `curl` check at the start of check 4 |
 
 The last one is a reminder that test scripts are code too, and need testing as well.

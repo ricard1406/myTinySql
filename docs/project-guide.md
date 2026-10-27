@@ -51,7 +51,7 @@ The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,646 
 | `data/` | `SYSTEM_TABLE` (30 lines, 5 tables), `EMPLOY_DATA` (37 rows: ID, NOME, COGNOME, VIA, CITTA, PERIODO), `COMPANY_DATA` (8 made-up companies, added 2026-10-21), `CAL_WEEKLY_DATA` (154 rows), `VINI-ITALY_DATA` (37 Italian wines: REGIONE, VINO, TIPO; made with **+ New table** on 2026-10-27) |
 | `web/` | The browser page: `index.html` (structure), `style.css` (look), `app.js` (behaviour), `favicon.svg` (icon) |
 | `examples/` | `select.sql`, `describe.sql`, `insert.sql`, `company.sql`. `insert.sql` adds rows to `data/`; `company.sql` holds the rows that filled `COMPANY_DATA`. |
-| `tests/` | 8 test scripts, each with its `.expected` output, `run_tests.sh`, and `data/`: the frozen tables the tests run on |
+| `tests/` | 8 test scripts, each with its `.expected` output, `run_tests.sh`, `check_all.sh` (`make check`: every check of TESTING.md), and `data/`: the frozen tables the tests run on |
 | `docs/` | These notes |
 | `Makefile`, `Doxyfile`, `README.md` | Build rules, Doxygen settings and a quick start |
 | `INSTALLATION.md`, `TESTING.md` | The installation guide, and the testing guide: twelve checks with their expected results |
@@ -165,6 +165,7 @@ git clone https://github.com/ricard1406/myTinySql.git
 cd ~/Projects/myTinySQL
 make          # builds ./myTinySql; object files go to build/
 make test     # runs the 8 test scripts on a copy of tests/data/
+make check    # every check of TESTING.md, then ALL DONE - IT WORKS or OOOPS - SOMETHING IS WRONG
 make doxygen  # HTML documentation of the code, from its Doxygen comments
 make clean    # removes build/ and the binary
 ```
