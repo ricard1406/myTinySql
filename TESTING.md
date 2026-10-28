@@ -9,7 +9,14 @@ command and expected result in this file was run before it was written down.
 ## All checks at once
 
 One command runs checks 1 to 10 and 12, compares every result with the one this guide expects, and ends
-with a single verdict:
+with a single verdict. First install the tools the checks use: **a fresh Ubuntu has no `curl`**, and
+without it the checks stop at once.
+
+```bash
+sudo apt install build-essential curl git doxygen
+```
+
+Then run all the checks:
 
 ```bash
 make check
@@ -76,7 +83,8 @@ Each check has two kinds of grey boxes:
 
 ## What you need
 
-The build tools from [INSTALLATION.md](INSTALLATION.md), plus the tools some checks use. On Ubuntu:
+The build tools from [INSTALLATION.md](INSTALLATION.md), plus the tools some checks use. A fresh
+Ubuntu has no `curl`, so install it even if you installed everything else. On Ubuntu:
 
 ```bash
 sudo apt install curl git doxygen

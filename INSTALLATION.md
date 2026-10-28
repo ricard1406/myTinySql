@@ -70,8 +70,14 @@ make test
 Eight test scripts run on a copy of the sample tables. Each line must say `PASS`.
 
 For the complete check (build, tests, server, memory safety, documentation, a fresh copy from GitHub),
-run `make check` (about 2 minutes). It needs `curl`, `git` and `doxygen`, and ends with
-`ALL DONE - IT WORKS`; see [TESTING.md](TESTING.md).
+run `make check` (about 2 minutes). It needs `curl`, `git` and `doxygen`; a fresh Ubuntu has no `curl`,
+so install them first:
+
+```bash
+sudo apt install curl git doxygen
+```
+
+Then `make check` ends with `ALL DONE - IT WORKS`; see [TESTING.md](TESTING.md).
 
 ## 5. Run it
 

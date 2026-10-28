@@ -9,6 +9,10 @@ Code documentation (Doxygen): https://ricard1406.github.io/myTinySql/
 **Testing:** how to check, step by step, that everything works is in [TESTING.md](TESTING.md);
 `make check` runs all those checks at once.
 
+**License:** [MIT](https://github.com/ricard1406/myTinySql/blob/main/LICENSE). The software is provided
+"as is", without any warranty, and the author accepts no responsibility for its use: see the last
+section, "License and responsibility".
+
 > **DISCLAIMER: All data in this project is sample data, for testing purposes only.
 > The companies, addresses and other values are fictional or AI generated. Many names in the
 > `EMPLOY` table are those of historical Italian composers, used only as sample values;
@@ -57,3 +61,14 @@ REM a comment
 To add a table, use `CREATE TABLE` (or **+ New table** on the web page). It adds one 80-character
 line per column to `data/SYSTEM_TABLE` and creates an empty `data/<TABLE>_DATA` file; you can also
 do both by hand.
+
+## License and responsibility
+
+myTinySQL is free software under the
+[MIT License](https://github.com/ricard1406/myTinySql/blob/main/LICENSE): you may use, copy, modify and
+share it, also for commercial purposes, as long as the copyright notice and the license text stay with it.
+
+**No responsibility:** myTinySQL is a learning project. It is provided "as is", without warranty of any
+kind, express or implied. The author accepts no responsibility for any damage, loss of data or other
+consequence of using it, or of being unable to use it. Use it at your own risk, and keep a copy of any data
+you care about.

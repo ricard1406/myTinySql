@@ -25,6 +25,8 @@ This guide describes the rewritten version. It was checked on 2026-10-20 by buil
 
 **On GitHub:** the code and its history are at [github.com/ricard1406/myTinySql](https://github.com/ricard1406/myTinySql) (public since 2026-10-22). The first pre-release is [v0.1.0](https://github.com/ricard1406/myTinySql/releases/tag/v0.1.0), and the Doxygen documentation of the code is at [ricard1406.github.io/myTinySql](https://ricard1406.github.io/myTinySql/), rebuilt automatically after every push. Two guides sit next to the code: [INSTALLATION.md](../INSTALLATION.md) (requirements, build, first run) and [TESTING.md](../TESTING.md) (twelve checks, each with its command and expected result).
 
+**License:** myTinySQL is free software under the [MIT License](../LICENSE): anyone may use, copy, modify and share it, as long as the copyright notice and the license text stay with it. It is provided "as is", without warranty of any kind, and the author accepts no responsibility for any damage, loss of data or other consequence of its use.
+
 > **DISCLAIMER: All data in this project is sample data, for testing purposes only. The companies, addresses and other values are fictional or AI generated. Many names in the `EMPLOY` table are those of historical Italian composers, used only as sample values; the other values in those rows (such as city and period) are sample data and may not be accurate. Any other resemblance to real persons, living or dead, or actual places is purely coincidental.**
 
 ## Project structure
@@ -55,6 +57,7 @@ The code is in `src/` (8 `.cpp` files) and `include/` (7 `.hpp` headers), 2,646 
 | `docs/` | These notes |
 | `Makefile`, `Doxyfile`, `README.md` | Build rules, Doxygen settings and a quick start |
 | `INSTALLATION.md`, `TESTING.md` | The installation guide, and the testing guide: twelve checks with their expected results |
+| `LICENSE` | The MIT License |
 | `.github/workflows/doxygen.yml` | Rebuilds the Doxygen pages on GitHub after every push |
 
 One data change from 2023: the ruler line `0123456789...` at the top of `CAL_WEEKLY_DATA` was removed, because it was printed as a row. `SYSTEM_DATA` is no longer needed, since `DESCRIBE` now reads `SYSTEM_TABLE`.
