@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15  # a normal run takes 1-2 minutes; stop a stuck one instead of waiting 6 hours
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # full history and tags, so the docs show a version like v0.1.0-4-g1999cec
 
@@ -32,7 +32,7 @@ jobs:
       - name: Build the documentation
         run: make doxygen
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: build/doxygen/html
 
@@ -45,4 +45,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
