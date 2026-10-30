@@ -7,6 +7,7 @@
 #include <compare>
 #include <format>
 #include <fstream>
+#include <limits>
 
 #include "Catalog.hpp"
 #include "TableFile.hpp"
@@ -320,13 +321,18 @@ StatementResult Session::run(const CreateTableStmt& stmt)
         if (name == "ID" && !schema.columns.empty()) {
             throw SqlError("the ID column must be the first one: rows are numbered by it");
         }
+        // The sum stops at the largest std::size_t instead of wrapping around to a small number,
+        // which would pass the length check below.
+        constexpr std::size_t kLargest = std::numeric_limits<std::size_t>::max();
+        const std::size_t end =
+            definition.width > kLargest - schema.recordLength ? kLargest : schema.recordLength + definition.width;
         schema.columns.push_back(Column{
             .name = name,
             .type = definition.type,
             .from = schema.recordLength,
-            .to = schema.recordLength + definition.width - 1,
+            .to = end - 1,
         });
-        schema.recordLength += definition.width;
+        schema.recordLength = end;
     }
     if (schema.recordLength > kMaxRecordLength) {
         throw SqlError(std::format("a row of table {} would be {} characters long: the limit is {}",
