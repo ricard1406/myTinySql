@@ -78,6 +78,9 @@ ERROR: invalid table name 'ThisNameIsMuchTooLongForIt': use up to 20 letters, di
 > CREATE TABLE BAD (NAME CHAR(99999), MORE CHAR(10))
 ERROR: a row of table BAD would be 100009 characters long: the limit is 99999
 
+> CREATE TABLE BAD (A CHAR(9223372036854775807), B CHAR(9223372036854775807), C CHAR(5))
+ERROR: a row of table BAD would be 18446744073709551615 characters long: the limit is 99999
+
 > CREATE TABLE BAD ()
 ERROR: expected a column name but found ")"
 
